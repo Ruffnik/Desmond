@@ -12,12 +12,8 @@ internal class KF2Server
     #region Static interface
     public static void TryUpdate()
     {
-        //TODO:
-        //if (CheckUpdate())
-        //  Kill();
-        do
-            RunSteamCMD(AppID);
-        while (!File.Exists(KFServer));//First-time download quits sometimes
+        while (!RunSteamCMD(AppID))
+            KillAll();
     }
 
     public static void Clean()
@@ -140,7 +136,7 @@ internal class KF2Server
             while (true)
             {
                 Runner.Start();
-                    while (!(FileSystem.Exists(Log) && (Lines = FileSystem.TryRead(Log)).Any(_ => _.Contains(PublicIP))))
+                while (!(FileSystem.Exists(Log) && (Lines = FileSystem.TryRead(Log)).Any(_ => _.Contains(PublicIP))))
                     Thread.Sleep(new TimeSpan(0, 1, 0));
                 if (HackINIs())
                     Runner.Kill();
@@ -200,7 +196,7 @@ internal class KF2Server
     }
     #endregion
 
-    static void RunSteamCMD(int AppID, string? UserName = null)
+    static bool RunSteamCMD(int AppID, string? UserName = null)
     {
         if (!File.Exists(SteamCMD))
             switch (Environment.OSVersion.Platform)
@@ -210,7 +206,7 @@ internal class KF2Server
                     new HttpClient().GetAsync(URL).Result.Content.CopyTo(Stream, null, new CancellationTokenSource().Token);
                     new ZipArchive(Stream).ExtractToDirectory(CWD);
                     break;
-                case PlatformID.Unix:
+                case PlatformID.Unix://TODO: Port to TarFile
                     if (!Directory.Exists(CWD))
                         Directory.CreateDirectory(CWD);
                     var Temp = Path.Combine(CWD, Path.ChangeExtension(SteamCMD, "tar.gz"));
@@ -228,7 +224,22 @@ internal class KF2Server
                 default:
                     throw new PlatformNotSupportedException();
             }
-        Process.Start(new ProcessStartInfo(SteamCMD, $"+login {UserName ?? "anonymous"} +app_update {AppID} +quit") { UseShellExecute = OperatingSystem.IsLinux() })!.WaitForExit();
+
+        bool Result = false;
+        //TODO: validate/fix on Linux
+        Process Runner = new()
+        {
+            StartInfo = new ProcessStartInfo(SteamCMD, $"+login {UserName ?? "anonymous"} +app_update {AppID} +quit") { UseShellExecute = OperatingSystem.IsLinux(), RedirectStandardOutput = true }!
+        };
+        Runner.OutputDataReceived += (object sender, DataReceivedEventArgs e) =>
+        {
+            Console.WriteLine(e.Data);
+            Result |= e.Data?.StartsWith(Success) ?? false;
+        };
+        Runner.Start();
+        Runner.BeginOutputReadLine();
+        Runner.WaitForExit();
+        return Result;
     }
 
     #region Setup
@@ -243,6 +254,7 @@ internal class KF2Server
 
     #region SteamCMD
     const int AppID = 232130;
+    const string Success = "Success!";
 
     static readonly string SteamCMD = Path.Combine(CWD, Environment.OSVersion.Platform switch
     {
@@ -305,6 +317,7 @@ internal class KF2Server
     #endregion
     #endregion
 }
+
 #region Types
 public enum GameModes
 {
