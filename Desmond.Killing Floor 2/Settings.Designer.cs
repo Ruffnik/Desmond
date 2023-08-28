@@ -12,7 +12,7 @@ namespace Desmond {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.4.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.7.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -20,6 +20,17 @@ namespace Desmond {
         public static Settings Default {
             get {
                 return defaultInstance;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        public global::System.Collections.Specialized.StringCollection WorkshopMaps {
+            get {
+                return ((global::System.Collections.Specialized.StringCollection)(this["WorkshopMaps"]));
+            }
+            set {
+                this["WorkshopMaps"] = value;
             }
         }
         
@@ -44,24 +55,13 @@ namespace Desmond {
             "ng>KF-Elysium</string>\r\n  <string>KF-Dystopia2029</string>\r\n  <string>KF-Moonbas" +
             "e</string>\r\n  <string>KF-Netherhold</string>\r\n  <string>KF-CarillonHamlet</strin" +
             "g>\r\n  <string>KF-Rig</string>\r\n  <string>KF-BarmwichTown</string>\r\n  <string>KF-" +
-            "Crash</string>\r\n</ArrayOfString>")]
+            "Crash</string>\r\n  <string>KF-Subduction</string>\r\n</ArrayOfString>")]
         public global::System.Collections.Specialized.StringCollection StockMaps {
             get {
                 return ((global::System.Collections.Specialized.StringCollection)(this["StockMaps"]));
             }
             set {
                 this["StockMaps"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        public global::System.Collections.Specialized.StringCollection WorkshopMaps {
-            get {
-                return ((global::System.Collections.Specialized.StringCollection)(this["WorkshopMaps"]));
-            }
-            set {
-                this["WorkshopMaps"] = value;
             }
         }
     }
