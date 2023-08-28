@@ -3,6 +3,9 @@ using System.IO.Compression;
 using Desmond;
 using Microsoft.VisualBasic.FileIO;
 
+AppDomain.CurrentDomain.UnhandledException += (object _, UnhandledExceptionEventArgs e) => Console.WriteLine($"{e}");
+Console.Title = Common.Name;
+
 #region Setup
 string CWD = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Common.Name);
 const string URL = "https://files.teamspeak-services.com/releases/server/";
