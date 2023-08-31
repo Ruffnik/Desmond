@@ -12,14 +12,14 @@ internal class KF2Server
     #region Static interface
     public static void TryUpdate()
     {
-        while (!RunSteamCMD(AppID))
+        while (!RunSteamCMD(Const.AppID))
             KillAll();
     }
 
     public static void Clean()
     {
-        Clean(Logs);
-        Clean(Dumps);
+        Clean(Const.Logs);
+        Clean(Const.Dumps);
 
         void Clean(string Folder)
         {
@@ -28,7 +28,7 @@ internal class KF2Server
         }
     }
 
-    public static void KillAll() => Process.GetProcessesByName(Path.GetFileNameWithoutExtension(KFServer)).ToList().ForEach(_ => _.Kill());
+    public static void KillAll() => Process.GetProcessesByName(Const.Process).ToList().ForEach(_ => _.Kill());//TODO: validieren auf Linux
 
     public static (uint, IPAddress, IEnumerable<string>) GetStatus()
     {
@@ -106,45 +106,45 @@ internal class KF2Server
 
         if (!Running)
         {
-            FileKFGame = Path.Combine(Config, KFGame);
-            FileKFEngine = Path.Combine(Config, KFEngine);
-            var Log = Path.ChangeExtension(Path.GetRandomFileName(), Extension);
+            FileKFGame = Path.Combine(Const.Config, Const.KFGame);
+            FileKFEngine = Path.Combine(Const.Config, Const.KFEngine);
+            var Log = Path.ChangeExtension(Path.GetRandomFileName(), Const.Extension);
 
             if (ProbeMode)
             {
                 GamePassword = Path.GetFileNameWithoutExtension(Path.GetRandomFileName());
                 if (TryReadINIsProbe())
                 {
-                    INI.TryRemove(ref ContentKFGame, GameInfo, MapCycles);
+                    INI.TryRemove(ref ContentKFGame, Const.GameInfo, Const.MapCycles);
                     File.WriteAllLines(FileKFGame, ContentKFGame, Encoding.ASCII);
                 }
-                Runner = new() { StartInfo = new(KFServer, $"-log={Log}") };
+                Runner = new() { StartInfo = new(Const.KFServer, $"-log={Log}") };
             }
             else
             {
                 this.Maps = Maps?.ToArray();
-                var DirectoryConfig = Path.Combine(Config, ConfigSubDir);
-                FileKFGame = Path.Combine(DirectoryConfig, KFGame);
-                FileKFEngine = Path.Combine(DirectoryConfig, KFEngine);
-                FileKFWeb = Path.Combine(DirectoryConfig, KFWeb);
-                Runner = new() { StartInfo = new(KFServer, $"{Maps!.Random()}{(GameMode is not null ? "?Game=" + GameMode?.Decode() : string.Empty)}{(AdminPassword is not null ? "?AdminPassword=" + AdminPassword : string.Empty)}{(Offset is not null ? "?Port=" + (Base + Offset) : string.Empty)}{(OffsetWebAdmin is not null ? "?WebAdminPort=" + (AdminBase + OffsetWebAdmin) : string.Empty)}{(ConfigSubDir is not null ? "?ConfigSubDir=" + ConfigSubDir : string.Empty)} -log={Log}") };
+                var DirectoryConfig = Path.Combine(Const.Config, ConfigSubDir);
+                FileKFGame = Path.Combine(DirectoryConfig, Const.KFGame);
+                FileKFEngine = Path.Combine(DirectoryConfig, Const.KFEngine);
+                FileKFWeb = Path.Combine(DirectoryConfig, Const.KFWeb);
+                Runner = new() { StartInfo = new(Const.KFServer, $"{Maps!.Random()}{(GameMode is not null ? "?Game=" + GameMode?.Decode() : string.Empty)}{(AdminPassword is not null ? "?AdminPassword=" + AdminPassword : string.Empty)}{(Offset is not null ? "?Port=" + (Base + Offset) : string.Empty)}{(OffsetWebAdmin is not null ? "?WebAdminPort=" + (AdminBase + OffsetWebAdmin) : string.Empty)}{(ConfigSubDir is not null ? "?ConfigSubDir=" + ConfigSubDir : string.Empty)} -log={Log}") };
             }
 
-            Log = Path.Combine(Logs, Log);
+            Log = Path.Combine(Const.Logs, Log);
             HackINIs();
 
             while (true)
             {
                 Runner.Start();
-                while (!(FileSystem.Exists(Log) && (Lines = FileSystem.TryRead(Log)).Any(_ => _.Contains(PublicIP))))
+                while (!(FileSystem.Exists(Log) && (Lines = FileSystem.TryRead(Log)).Any(_ => _.Contains(Const.PublicIP))))
                     Thread.Sleep(new TimeSpan(0, 1, 0));
                 if (HackINIs())
                     Runner.Kill();
                 else
                 {
-                    Address = IPAddress.Parse(Find(Lines, PublicIP));
-                    this.Maps ??= INI.GetValue(ContentKFGame, GameInfo, MapCycles).Split('"')[1..^1].Where(_ => ',' != _[0]);
-                    Weekly = uint.Parse(Find(Lines, ProbeMode ? IntendedWeekly : UsedWeekly));
+                    Address = IPAddress.Parse(Find(Lines, Const.PublicIP));
+                    this.Maps ??= INI.GetValue(ContentKFGame, Const.GameInfo, Const.MapCycles).Split('"')[1..^1].Where(_ => ',' != _[0]);
+                    Weekly = uint.Parse(Find(Lines, ProbeMode ? Const.IntendedWeekly : Const.UsedWeekly));
                     break;
                 }
             }
@@ -170,16 +170,16 @@ internal class KF2Server
             if (!(TryReadINIsProbe() && FileSystem.TryRead(FileKFWeb!, ref ContentKFWeb)))
                 return true;
             var HackedKFGame =
-            (AdminPassword is not null && INI.TrySet(ContentKFGame!, EngineInfo, "bAdminCanPause", true)) |
+            (AdminPassword is not null && INI.TrySet(ContentKFGame!, Const.EngineInfo, "bAdminCanPause", true)) |
             (ServerName is not null && INI.TrySet(ContentKFGame!, "Engine.GameReplicationInfo", "ServerName", ServerName)) |
-            (BannerLink is not null && INI.TrySet(ContentKFGame!, GameInfo, "BannerLink", BannerLink)) |
-            (ServerMOTD is not null && INI.TrySet(ContentKFGame!, GameInfo, "ServerMOTD", string.Join("\\n", ServerMOTD))) |
-            (WebsiteLink is not null && INI.TrySet(ContentKFGame!, GameInfo, "WebsiteLink", WebsiteLink)) |
-            (GameLength is not null && INI.TrySet(ContentKFGame!, GameInfo, "GameLength", (int)GameLength)) |
-            (Difficulty is not null && INI.TrySet(ContentKFGame!, EngineInfo, "GameDifficulty", (double)Difficulty)) |
-            INI.TrySet(ContentKFGame!, GameInfo, "ClanMotto", string.Empty) |
-            INI.TrySet(ContentKFGame!, GameInfo, "bDisableTeamCollision", true) |
-            INI.TrySet(ContentKFGame!, GameInfo, MapCycles, INI.Encode(Maps!)) |
+            (BannerLink is not null && INI.TrySet(ContentKFGame!, Const.GameInfo, "BannerLink", BannerLink)) |
+            (ServerMOTD is not null && INI.TrySet(ContentKFGame!, Const.GameInfo, "ServerMOTD", string.Join("\\n", ServerMOTD))) |
+            (WebsiteLink is not null && INI.TrySet(ContentKFGame!, Const.GameInfo, "WebsiteLink", WebsiteLink)) |
+            (GameLength is not null && INI.TrySet(ContentKFGame!, Const.GameInfo, "GameLength", (int)GameLength)) |
+            (Difficulty is not null && INI.TrySet(ContentKFGame!, Const.EngineInfo, "GameDifficulty", (double)Difficulty)) |
+            INI.TrySet(ContentKFGame!, Const.GameInfo, "ClanMotto", string.Empty) |
+            INI.TrySet(ContentKFGame!, Const.GameInfo, "bDisableTeamCollision", true) |
+            INI.TrySet(ContentKFGame!, Const.GameInfo, Const.MapCycles, INI.Encode(Maps!)) |
             INI.TrySet(ContentKFGame!, "Engine.AccessControl", "GamePassword", GamePassword ?? string.Empty);
             var HackedKFEngine = UsedForTakeover is not null && INI.TrySet(ContentKFEngine!, "Engine.GameEngine", "bUsedForTakeover", UsedForTakeover!.Value);
             var HackedKFWeb = Maps is not null && INI.TrySet(ContentKFWeb!, "IpDrv.WebServer", "bEnabled", AdminPassword is not null);
@@ -198,23 +198,24 @@ internal class KF2Server
 
     static bool RunSteamCMD(int AppID, string? UserName = null)
     {
-        if (!File.Exists(SteamCMD))
+        if (!File.Exists(Const.SteamCMD))
             switch (Environment.OSVersion.Platform)
             {
                 case PlatformID.Win32NT:
                     MemoryStream Stream = new();
-                    new HttpClient().GetAsync(URL).Result.Content.CopyTo(Stream, null, new CancellationTokenSource().Token);
-                    new ZipArchive(Stream).ExtractToDirectory(CWD);
+                    new HttpClient().GetAsync(Const.URL).Result.Content.CopyTo(Stream, null, new CancellationTokenSource().Token);
+                    new ZipArchive(Stream).ExtractToDirectory(Const.CWD);
                     break;
                 case PlatformID.Unix://TODO: Port to TarFile
-                    if (!Directory.Exists(CWD))
-                        Directory.CreateDirectory(CWD);
-                    var Temp = Path.Combine(CWD, Path.ChangeExtension(SteamCMD, "tar.gz"));
+                    throw new NotImplementedException();
+                    if (!Directory.Exists(Const.CWD))
+                        Directory.CreateDirectory(Const.CWD);
+                    var Temp = Path.Combine(Const.CWD, Path.ChangeExtension(Const.SteamCMD, "tar.gz"));
                     try
                     {
                         using (FileStream Writer = new(Temp, FileMode.Create))
-                            new HttpClient().GetAsync(URL).Result.Content.CopyTo(Writer, null, new CancellationTokenSource().Token);
-                        Process.Start(new ProcessStartInfo("tar", "-xf " + Temp) { WorkingDirectory = CWD })!.WaitForExit();
+                            new HttpClient().GetAsync(Const.URL).Result.Content.CopyTo(Writer, null, new CancellationTokenSource().Token);
+                        Process.Start(new ProcessStartInfo("tar", "-xf " + Temp) { WorkingDirectory = Const.CWD })!.WaitForExit();
                     }
                     finally
                     {
@@ -229,93 +230,22 @@ internal class KF2Server
         //TODO: validate/fix on Linux
         Process Runner = new()
         {
-            StartInfo = new ProcessStartInfo(SteamCMD, $"+login {UserName ?? "anonymous"} +app_update {AppID} +quit") { UseShellExecute = OperatingSystem.IsLinux(), RedirectStandardOutput = true }!
+            StartInfo = new ProcessStartInfo(Const.SteamCMD, $"+login {UserName ?? "anonymous"} +app_update {AppID} +quit")
+            {
+                UseShellExecute = OperatingSystem.IsLinux(),
+                RedirectStandardOutput = true
+            }!
         };
         Runner.OutputDataReceived += (object sender, DataReceivedEventArgs e) =>
         {
             Console.WriteLine(e.Data);
-            Result |= e.Data?.StartsWith(Success) ?? false;
+            Result |= e.Data?.StartsWith(Const.Success) ?? false;
         };
         Runner.Start();
         Runner.BeginOutputReadLine();
         Runner.WaitForExit();
         return Result;
     }
-
-    #region Setup
-    #region General
-    static readonly string CWD = Environment.OSVersion.Platform switch
-    {
-        PlatformID.Win32NT => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Common.Name),
-        PlatformID.Unix => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Steam"),
-        _ => throw new PlatformNotSupportedException()
-    };
-    #endregion
-
-    #region SteamCMD
-    const int AppID = 232130;
-    const string Success = "Success!";
-
-    static readonly string SteamCMD = Path.Combine(CWD, Environment.OSVersion.Platform switch
-    {
-        PlatformID.Win32NT => "steamcmd.exe",
-        PlatformID.Unix => "steamcmd.sh",
-        _ => throw new PlatformNotSupportedException()
-    });
-
-    static readonly string URL = Environment.OSVersion.Platform switch
-    {
-        PlatformID.Win32NT => "https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip",
-        PlatformID.Unix => "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz",
-        _ => throw new PlatformNotSupportedException()
-    };
-
-    static readonly string Dumps = Path.Combine(CWD, Environment.OSVersion.Platform switch
-    {
-        PlatformID.Win32NT => "dumps",
-        _ => throw new PlatformNotSupportedException()
-    });
-    #endregion
-
-    #region KF2Server
-    static readonly string KFServer = Path.Combine(CWD, Environment.OSVersion.Platform switch
-    {
-        PlatformID.Win32NT => @"steamapps\common\kf2server\Binaries\Win64\KFServer.exe",
-        PlatformID.Unix => "steamapps/common/kf2server/Binaries/Win64/KFGameSteamServer.bin.x86_64",
-        _ => throw new PlatformNotSupportedException()
-    });
-
-    static readonly string Logs = Path.Combine(CWD, Environment.OSVersion.Platform switch
-    {
-        PlatformID.Win32NT => @"steamapps\common\kf2server\KFGame\Logs",
-        _ => throw new PlatformNotSupportedException()
-    });
-
-    static readonly string Prefix = Environment.OSVersion.Platform switch
-    {
-        PlatformID.Win32NT => "PC",
-        PlatformID.Unix => "Linux",
-        _ => throw new PlatformNotSupportedException()
-    };
-
-    static readonly string KFGame = Prefix + "Server-KFGame.ini";
-    static readonly string KFEngine = Prefix + "Server-KFEngine.ini";
-    const string KFWeb = "KFWeb.ini";
-    const string GameInfo = "KFGame.KFGameInfo";
-    const string EngineInfo = "Engine.GameInfo";
-    const string MapCycles = "GameMapCycles";
-    const string PublicIP = "Public IP";
-    const string IntendedWeekly = "Intended weekly index:";
-    const string UsedWeekly = "USED Weekly index:";
-    const string Extension = "log";
-
-    static readonly string Config = Path.Combine(CWD, Environment.OSVersion.Platform switch
-    {
-        PlatformID.Win32NT => @"steamapps\common\kf2server\KFGame\Config",
-        _ => throw new PlatformNotSupportedException()
-    });
-    #endregion
-    #endregion
 }
 
 #region Types
