@@ -25,17 +25,6 @@ namespace Desmond {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        public global::System.Collections.Specialized.StringCollection WorkshopMaps {
-            get {
-                return ((global::System.Collections.Specialized.StringCollection)(this["WorkshopMaps"]));
-            }
-            set {
-                this["WorkshopMaps"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("<?xml version=\"1.0\" encoding=\"utf-16\"?>\r\n<ArrayOfString xmlns:xsd=\"http://www.w3." +
             "org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\r\n  <s" +
             "tring>KF-BurningParis</string>\r\n  <string>KF-Bioticslab</string>\r\n  <string>KF-O" +

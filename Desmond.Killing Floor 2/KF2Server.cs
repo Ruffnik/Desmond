@@ -10,16 +10,17 @@ namespace Desmond;
 internal class KF2Server
 {
     #region Static interface
-    public static void TryUpdate()
+    internal static void TryUpdate()
     {
         while (!RunSteamCMD(Const.AppID))
             KillAll();
     }
 
-    public static void Clean()
+    internal static void Clean()
     {
         Clean(Const.Logs);
-        Clean(Const.Dumps);
+        if (PlatformID.Win32NT == Environment.OSVersion.Platform)
+            Clean(Const.Dumps);
 
         void Clean(string Folder)
         {
@@ -28,9 +29,9 @@ internal class KF2Server
         }
     }
 
-    public static void KillAll() => Process.GetProcessesByName(Const.Process).ToList().ForEach(_ => _.Kill());//TODO: validieren auf Linux
+    internal static void KillAll() => Process.GetProcessesByName(Const.Process).ToList().ForEach(_ => _.Kill());
 
-    public static (uint, IPAddress, IEnumerable<string>) GetStatus()
+    internal static (uint, IPAddress, IEnumerable<string>) GetStatus()
     {
         var Runner = new KF2Server(true);
         Runner.Run();
@@ -84,19 +85,19 @@ internal class KF2Server
 
     internal void Wait() => Runner!.WaitForExit();
 
-    public void Kill() => Runner!.Kill();
+    internal void Kill() => Runner!.Kill();
     #endregion
 
     #region Plumbing
     Process? Runner;
     string? _ConfigSubDir;
 
-    public KF2Server(bool ProbeMode = false) => this.ProbeMode = ProbeMode;
+    internal KF2Server(bool ProbeMode = false) => this.ProbeMode = ProbeMode;
 
     static string Find(string[] Lines, string Key) => Lines.Where(_ => _.Contains(Key)).First().Split(Key)[1].Trim().Split(' ')[0];
     #endregion
 
-    public void Run(IEnumerable<string>? Maps = null)
+    internal void Run(IEnumerable<string>? Maps = null)
     {
         string[] ContentKFGame = Array.Empty<string>();
         string[] ContentKFEngine = Array.Empty<string>();
@@ -206,8 +207,7 @@ internal class KF2Server
                     new HttpClient().GetAsync(Const.URL).Result.Content.CopyTo(Stream, null, new CancellationTokenSource().Token);
                     new ZipArchive(Stream).ExtractToDirectory(Const.CWD);
                     break;
-                case PlatformID.Unix://TODO: Port to TarFile
-                    throw new NotImplementedException();
+                case PlatformID.Unix:
                     if (!Directory.Exists(Const.CWD))
                         Directory.CreateDirectory(Const.CWD);
                     var Temp = Path.Combine(Const.CWD, Path.ChangeExtension(Const.SteamCMD, "tar.gz"));
@@ -227,12 +227,11 @@ internal class KF2Server
             }
 
         bool Result = false;
-        //TODO: validate/fix on Linux
         Process Runner = new()
         {
             StartInfo = new ProcessStartInfo(Const.SteamCMD, $"+login {UserName ?? "anonymous"} +app_update {AppID} +quit")
             {
-                UseShellExecute = OperatingSystem.IsLinux(),
+                UseShellExecute = false,
                 RedirectStandardOutput = true
             }!
         };
@@ -273,7 +272,7 @@ public enum Lengths
 }
 #endregion
 
-public static class ExtensionMethods
+internal static class ExtensionMethods
 {
     internal static string Decode<T>(this T Enum) where T : Enum => typeof(T).GetMember(Enum!.ToString()!).Single().GetCustomAttributes(false).OfType<EnumMemberAttribute>().Single().Value!;
 

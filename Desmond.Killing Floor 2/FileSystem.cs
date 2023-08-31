@@ -15,7 +15,8 @@ internal class FileSystem
             return false;
     }
 
-    internal static bool Exists(string Path)//TODO: fix what I think to be a race condition in a more structured way (current solution stems from trial & error)
+    //Workaround for race condition
+    internal static bool Exists(string Path)
     {
         if (!File.Exists(Path))
             return false;

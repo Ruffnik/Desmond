@@ -3,7 +3,6 @@
 AppDomain.CurrentDomain.UnhandledException += (object _, UnhandledExceptionEventArgs e) => Console.WriteLine($"{e}");
 Console.Title = Common.Name;
 
-const string Extension = "xml";
 string CWD = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Common.Name);
 
 var Farm = Enumerable.Empty<KF2Server>();
@@ -11,7 +10,7 @@ if (!Directory.Exists(CWD))
     Directory.CreateDirectory(CWD);
 else
 {
-    Directory.EnumerateFiles(CWD, "*." + Extension).ToList().ForEach(_ =>
+    Directory.EnumerateFiles(CWD, "*." + Const.XML).ToList().ForEach(_ =>
     {
         var Server = Common.Deserialize<KF2Server>(_);
         Server.ConfigSubDir = Path.GetFileNameWithoutExtension(_);
@@ -34,7 +33,7 @@ while (true)
     {
         Settings.Default.StockMaps = Common.EncodeSettings(Common.DecodeStrings(Settings.Default.StockMaps).Concat(MissingStockMaps.Shuffle()));
         Settings.Default.Save();
-        Common.Serialize(Path.ChangeExtension(nameof(Settings.Default.StockMaps), Extension), Path.Combine(CWD, Path.ChangeExtension(string.Join(string.Empty, DateOnly.FromDateTime(DateTime.Now).ToString("o").Split(Path.GetInvalidFileNameChars())), "zip")), Settings.Default.StockMaps);
+        Common.Serialize(Path.ChangeExtension(nameof(Settings.Default.StockMaps), Const.XML), Path.Combine(CWD, Path.ChangeExtension(string.Join(string.Empty, DateOnly.FromDateTime(DateTime.Now).ToString("o").Split(Path.GetInvalidFileNameChars())), "zip")), Settings.Default.StockMaps);
     }
 
     Farm.AsParallel().ForAll(_ =>
