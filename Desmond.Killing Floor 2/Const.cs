@@ -11,6 +11,13 @@ internal class Const
         PlatformID.Unix => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Steam"),
         _ => throw new PlatformNotSupportedException()
     };
+
+    internal static string[] Resources =
+    {
+        Path.Combine(Base, "Web", "images", "favicon.ico"),
+        Path.Combine(Base, "Web", "images", "kf2.css"),
+        Path.Combine(Base, "Web", "images", "kf2modern.css")
+    };
     #endregion
 
     #region SteamCMD
@@ -46,6 +53,8 @@ internal class Const
         _ => throw new PlatformNotSupportedException()
     };
 
+    static string Base => Path.Combine(CWD, "steamapps", "common", "kf2server", "KFGame");
+
     internal static string KFServer => Path.Combine(CWD, "steamapps", "common", "kf2server", "Binaries", "Win64", Binary);
 
     internal static string Process => Environment.OSVersion.Platform switch
@@ -55,7 +64,7 @@ internal class Const
         _ => throw new PlatformNotSupportedException()
     };
 
-    internal static string Logs => Path.Combine(CWD, "steamapps", "common", "kf2server", "KFGame", "Logs");
+    internal static string Logs => Path.Combine(Base, "Logs");
 
     static string Prefix => Environment.OSVersion.Platform switch
     {
@@ -75,6 +84,6 @@ internal class Const
     internal const string UsedWeekly = "USED Weekly index:";
     internal const string Extension = "log";
 
-    internal static string Config => Path.Combine(CWD, "steamapps", "common", "kf2server", "KFGame", "Config");
+    internal static string Config => Path.Combine(Base, "Config");
     #endregion
 }

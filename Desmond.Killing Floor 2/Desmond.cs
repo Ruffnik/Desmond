@@ -1,8 +1,10 @@
-﻿using Desmond;
+﻿using System.ComponentModel;
+using Desmond;
 
 AppDomain.CurrentDomain.UnhandledException += (object _, UnhandledExceptionEventArgs e) => Console.WriteLine($"{e}");
-Console.Title = Common.Name;
+Settings.Default.PropertyChanged += (object? sender, PropertyChangedEventArgs e) => Settings.Default.Save();
 
+Console.Title = Common.Name;
 string CWD = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Common.Name);
 
 var Farm = Enumerable.Empty<KF2Server>();
@@ -16,17 +18,20 @@ else
         Server.ConfigSubDir = Path.GetFileNameWithoutExtension(_);
         Server.Offset = Farm.Count();
         if (Server.AdminPassword is not null)
-            Server.OffsetWebAdmin = Farm.Where(Server => Server.AdminPassword is not null).Count();
+            Server.AdminOffset = Farm.Where(Server => Server.AdminPassword is not null).Count();
         Farm = Farm.Append(Server);
     });
 }
 
+Frontend.Start(Farm);
 KF2Server.KillAll();
+
 while (true)
 {
     KF2Server.Clean();
     KF2Server.TryUpdate();
     var Status = KF2Server.GetStatus();
+    Frontend.Update(Farm, Status.Item2);
 
     var MissingStockMaps = Status.Item3.Where(_ => !Settings.Default.StockMaps.Contains(_));
     if (MissingStockMaps.Any())

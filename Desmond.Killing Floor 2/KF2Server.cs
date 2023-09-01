@@ -61,7 +61,9 @@ internal class KF2Server
     #region State
     const int Base = 7777 + 1;
     const int AdminBase = 8080 + 1;
-    public int? Offset, OffsetWebAdmin;
+    public int? Offset, AdminOffset;
+    public int? Port { get => Base + Offset; }
+    public int? AdminPort { get => AdminBase + AdminOffset; }
     readonly bool ProbeMode;
     internal IPAddress? Address { get; private set; }
     internal IEnumerable<string>? Maps { get; private set; }
@@ -69,7 +71,7 @@ internal class KF2Server
 
     internal string ConfigSubDir
     {
-        private get => _ConfigSubDir!;
+        get => _ConfigSubDir!;
         set
         {
             _ConfigSubDir = Environment.OSVersion.Platform switch
@@ -128,7 +130,7 @@ internal class KF2Server
                 FileKFGame = Path.Combine(DirectoryConfig, Const.KFGame);
                 FileKFEngine = Path.Combine(DirectoryConfig, Const.KFEngine);
                 FileKFWeb = Path.Combine(DirectoryConfig, Const.KFWeb);
-                Runner = new() { StartInfo = new(Const.KFServer, $"{Maps!.Random()}{(GameMode is not null ? "?Game=" + GameMode?.Decode() : string.Empty)}{(AdminPassword is not null ? "?AdminPassword=" + AdminPassword : string.Empty)}{(Offset is not null ? "?Port=" + (Base + Offset) : string.Empty)}{(OffsetWebAdmin is not null ? "?WebAdminPort=" + (AdminBase + OffsetWebAdmin) : string.Empty)}{(ConfigSubDir is not null ? "?ConfigSubDir=" + ConfigSubDir : string.Empty)} -log={Log}") };
+                Runner = new() { StartInfo = new(Const.KFServer, $"{Maps!.Random()}{(GameMode is not null ? "?Game=" + GameMode?.Decode() : string.Empty)}{(AdminPassword is not null ? "?AdminPassword=" + AdminPassword : string.Empty)}{(Offset is not null ? "?Port=" + Port : string.Empty)}{(AdminOffset is not null ? "?WebAdminPort=" + AdminPort : string.Empty)}{(ConfigSubDir is not null ? "?ConfigSubDir=" + ConfigSubDir : string.Empty)} -log={Log}") };
             }
 
             Log = Path.Combine(Const.Logs, Log);

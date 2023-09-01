@@ -53,5 +53,17 @@ namespace Desmond {
                 this["StockMaps"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string Crutch {
+            get {
+                return ((string)(this["Crutch"]));
+            }
+            set {
+                this["Crutch"] = value;
+            }
+        }
     }
 }
