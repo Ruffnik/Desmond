@@ -79,6 +79,8 @@ internal class Const
     internal const string GameInfo = "KFGame.KFGameInfo";
     internal const string EngineInfo = "Engine.GameInfo";
     internal const string MapCycles = "GameMapCycles";
+    internal const string GamePassword = "GamePassword";
+    internal const string UsedForTakeover = "bUsedForTakeover";
     internal const string PublicIP = "Public IP";
     internal const string IntendedWeekly = "Intended weekly index:";
     internal const string UsedWeekly = "USED Weekly index:";

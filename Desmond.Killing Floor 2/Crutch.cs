@@ -5,24 +5,24 @@ namespace Desmond;
 
 internal class Crutch
 {
+#pragma warning disable IDE0060
     internal static void Start(IEnumerable<KF2Server> Farm, IEnumerable<(string, byte[])> Resources)
+#pragma warning restore IDE0060
     {
-        Settings.Default.Crutch = Settings.Default.Crutch;
-
-        if (!string.IsNullOrEmpty(Settings.Default.Crutch))
+        if (!string.IsNullOrEmpty(Settings.Default.WWWRoot))
         {
-            if (!Directory.Exists(Settings.Default.Crutch))
-                Directory.CreateDirectory(Settings.Default.Crutch);
+            if (!Directory.Exists(Settings.Default.WWWRoot))
+                Directory.CreateDirectory(Settings.Default.WWWRoot);
             Resources.ToList().ForEach(_ =>
             {
-                var Target = Path.Combine(Settings.Default.Crutch, Path.GetFileName(_.Item1));
+                var Target = Path.Combine(Settings.Default.WWWRoot, Path.GetFileName(_.Item1));
                 if (!File.Exists(Target))
                     File.WriteAllBytesAsync(Target, _.Item2);
             });
         }
     }
 
-    internal static void Update(IEnumerable<KF2Server> Farm, IPAddress Address) => File.WriteAllTextAsync(Path.Combine(Settings.Default.Crutch, "index.html"), GetHTML(Farm, Address), Encoding.UTF8);
+    internal static void Update(IEnumerable<KF2Server> Farm, IPAddress Address) => File.WriteAllTextAsync(Path.Combine(Settings.Default.WWWRoot, "index.html"), GetHTML(Farm, Address), Encoding.UTF8);
 
     static string GetHTML(IEnumerable<KF2Server> Farm, IPAddress Address)
     {

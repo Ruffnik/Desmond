@@ -61,9 +61,9 @@ internal class KF2Server
     #region State
     const int Base = 7777 + 1;
     const int AdminBase = 8080 + 1;
-    public int? Offset, AdminOffset;
-    public int? Port { get => Base + Offset; }
-    public int? AdminPort { get => AdminBase + AdminOffset; }
+    internal int? Offset, AdminOffset;
+    internal int? Port { get => Base + Offset; }
+    internal int? AdminPort { get => AdminBase + AdminOffset; }
     readonly bool ProbeMode;
     internal IPAddress? Address { get; private set; }
     internal IEnumerable<string>? Maps { get; private set; }
@@ -153,12 +153,15 @@ internal class KF2Server
             }
         }
 
+        #region INIs
+        bool HackINIs() => ProbeMode ? HackINIsProbe() : HackINIsProd();
+
         bool HackINIsProbe()
         {
             if (!TryReadINIsProbe())
                 return true;
-            var HackedKFGame = INI.TrySet(ContentKFGame, "Engine.AccessControl", "GamePassword", GamePassword!);
-            var HackedKFEngine = INI.TrySet(ContentKFEngine, "Engine.GameEngine", "bUsedForTakeover", false);
+            var HackedKFGame = TrySetGamePassword(GamePassword);
+            var HackedKFEngine = TrySetTakeover(false);
             if (HackedKFGame)
                 File.WriteAllLines(FileKFGame, ContentKFGame, Encoding.ASCII);
             if (HackedKFEngine)
@@ -183,8 +186,8 @@ internal class KF2Server
             INI.TrySet(ContentKFGame!, Const.GameInfo, "ClanMotto", string.Empty) |
             INI.TrySet(ContentKFGame!, Const.GameInfo, "bDisableTeamCollision", true) |
             INI.TrySet(ContentKFGame!, Const.GameInfo, Const.MapCycles, INI.Encode(Maps!)) |
-            INI.TrySet(ContentKFGame!, "Engine.AccessControl", "GamePassword", GamePassword ?? string.Empty);
-            var HackedKFEngine = UsedForTakeover is not null && INI.TrySet(ContentKFEngine!, "Engine.GameEngine", "bUsedForTakeover", UsedForTakeover!.Value);
+            TrySetGamePassword(GamePassword);
+            var HackedKFEngine = TrySetTakeover(UsedForTakeover);
             var HackedKFWeb = Maps is not null && INI.TrySet(ContentKFWeb!, "IpDrv.WebServer", "bEnabled", AdminPassword is not null);
             if (HackedKFGame)
                 File.WriteAllLines(FileKFGame!, ContentKFGame!, Encoding.ASCII);
@@ -195,7 +198,10 @@ internal class KF2Server
             return HackedKFGame || HackedKFEngine || HackedKFWeb;
         }
 
-        bool HackINIs() => ProbeMode ? HackINIsProbe() : HackINIsProd();
+        bool TrySetGamePassword(string? GamePassword) => INI.TrySet(ContentKFGame!, "Engine.AccessControl", Const.GamePassword, GamePassword ?? string.Empty);
+
+        bool TrySetTakeover(bool? UsedForTakeover) => UsedForTakeover is not null && INI.TrySet(ContentKFEngine!, "Engine.GameEngine", Const.UsedForTakeover, UsedForTakeover!.Value);
+        #endregion
     }
     #endregion
 

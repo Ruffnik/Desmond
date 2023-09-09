@@ -48,7 +48,7 @@
   &lt;string&gt;KF-Subduction&lt;/string&gt;
 &lt;/ArrayOfString&gt;</Value>
     </Setting>
-    <Setting Name="Crutch" Type="System.String" Scope="User">
+    <Setting Name="WWWRoot" Type="System.String" Scope="Application">
       <Value Profile="(Default)" />
     </Setting>
   </Settings>

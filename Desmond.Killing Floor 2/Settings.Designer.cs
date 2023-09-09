@@ -54,15 +54,12 @@ namespace Desmond {
             }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string Crutch {
+        public string WWWRoot {
             get {
-                return ((string)(this["Crutch"]));
-            }
-            set {
-                this["Crutch"] = value;
+                return ((string)(this["WWWRoot"]));
             }
         }
     }
