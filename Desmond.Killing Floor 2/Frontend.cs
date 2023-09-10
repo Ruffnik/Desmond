@@ -1,4 +1,7 @@
-﻿using System.Net;
+﻿//TODO: handle ICO/PNG
+
+using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Runtime.Serialization;
 using System.Text;
@@ -7,12 +10,11 @@ namespace Desmond;
 
 internal static class Frontend
 {
-    #region Interface
+    #region Business logic
     internal static void Start(IEnumerable<KF2Server> Farm)
     {
         Task.Run(() =>
         {
-
             Update(Farm);
             TcpListener Listener = new(IPAddress.Any, 80);
             Listener.Start();
@@ -23,6 +25,9 @@ internal static class Frontend
 
     internal static void Update(IEnumerable<KF2Server> Farm, IPAddress? Address = null)
     {
+        if (!Const.Resources.Where(_ => !Path.Exists(_)).Any())
+            Resources ??= Const.Resources.Select(_ => new Resource() { Name = Path.GetFileName(_), Content = File.ReadAllText(_) });
+
         var Title = $"<title>{string.Join(" | ", Farm.Select(_ => _.ServerName!).Distinct())}</title>";
 
         var Links = "<link rel=\"shortcut icon\" href=\"favicon.ico\" type=\"image/x-icon\"><link rel=\"stylesheet\" type=\"text/css\" href=\"kf2.css\"><link rel=\"stylesheet\" type=\"text/css\" href=\"kf2modern.css\">";
@@ -53,7 +58,7 @@ internal static class Frontend
     #region HTTP
     static Response Serve(string? Path) =>
         Path is null ?
-        ServeUnsupported() :
+        new() { Status = Statuses.Unsupported } :
         string.Empty == Path ?
         ServeHomepage() :
         ServeResource(Path);
@@ -69,10 +74,8 @@ internal static class Frontend
             else
                 return new() { Status = Statuses.NotFound };
         else
-            return ServeUnsupported();
+            return new() { Status = Statuses.Unsupported };
     }
-
-    static Response ServeUnsupported() => new() { Status = Statuses.Unsupported };
 
     static Types? GetType(string Name)
     {
@@ -86,7 +89,7 @@ internal static class Frontend
 
     static byte[] Encode(Response Response)
     {
-        var Result= $@"HTTP/1.0 {(int)Response.Status} {Response.Status.Decode()}";
+        var Result = $@"HTTP/1.0 {(int)Response.Status} {Response.Status.Decode()}";
         if (Statuses.OK == Response.Status)
             Result += @$"
 Content-Length: {Response.Content!.Length}
@@ -115,11 +118,11 @@ Content-Type: {Response.Type!.Value.Decode()}
         Stream.Write(Scrap);
     };
 
-    static bool ResourceExists(string Name) => Resources.Any(_ => string.Equals(_.Name, Name, StringComparison.InvariantCultureIgnoreCase));
+    static bool ResourceExists(string Name) => Resources?.Any(_ => string.Equals(_.Name, Name, StringComparison.InvariantCultureIgnoreCase)) ?? false;
 
-    static string GetResource(string Name) => Resources.Single(_ => string.Equals(_.Name, Name, StringComparison.InvariantCultureIgnoreCase)).Content;
+    static string GetResource(string Name) => Resources!.Single(_ => string.Equals(_.Name, Name, StringComparison.InvariantCultureIgnoreCase)).Content;
 
-    readonly static IEnumerable<Resource> Resources = Const.Resources.Select(_ => new Resource() { Name = Path.GetFileName(_), Content = File.ReadAllText(_) });
+    static IEnumerable<Resource>? Resources;
 
     static string Homepage = string.Empty;
     #endregion
