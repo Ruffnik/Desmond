@@ -2,7 +2,7 @@
 
 namespace Desmond;
 
-internal class FileSystem
+internal static class FileSystem
 {
     internal static bool TryRead(string Path, ref string[] Collection)
     {

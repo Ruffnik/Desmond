@@ -4,10 +4,10 @@ using Desmond;
 using Microsoft.VisualBasic.FileIO;
 
 AppDomain.CurrentDomain.UnhandledException += (object _, UnhandledExceptionEventArgs e) => Console.WriteLine($"{e}");
-Console.Title = Common.Name;
+Console.Title = Utilities.Name;
 
 #region Setup
-string CWD = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Common.Name);
+string CWD = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Utilities.Name);
 const string URL = "https://files.teamspeak-services.com/releases/server/";
 string SubDir = Path.Combine(CWD, "teamspeak3-server_win64");
 string Logs = Path.Combine(SubDir, "logs");
@@ -50,7 +50,7 @@ void Run()
 void Clean()
 {
     if (Directory.Exists(Logs))
-        Task.Run(() => new DirectoryInfo(Logs).GetFiles().ToList().ForEach(_ => Common.TryDelete(_.FullName)));
+        Task.Run(() => new DirectoryInfo(Logs).GetFiles().ToList().ForEach(_ => Utilities.TryDelete(_.FullName)));
 }
 #endregion
 

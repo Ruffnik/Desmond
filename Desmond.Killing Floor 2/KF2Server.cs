@@ -25,18 +25,18 @@ internal class KF2Server
         void Clean(string Folder)
         {
             if (Directory.Exists(Folder))
-                Task.Run(() => new DirectoryInfo(Folder).GetFiles().ToList().ForEach(_ => Common.TryDelete(_.FullName)));
+                Task.Run(() => new DirectoryInfo(Folder).GetFiles().ToList().ForEach(_ => Utilities.TryDelete(_.FullName)));
         }
     }
 
     internal static void KillAll() => Process.GetProcessesByName(Const.Process).ToList().ForEach(_ => _.Kill());
 
-    internal static (uint, IPAddress, IEnumerable<string>) GetStatus()
+    internal static Status GetStatus()
     {
         var Runner = new KF2Server(true);
         Runner.Run();
         Runner.Runner!.Kill();
-        return (Runner.Weekly!.Value, Runner.Address!, Runner.Maps!);
+        return new() { Weekly = Runner.Weekly!.Value, Address = Runner.Address!, Maps = Runner.Maps! };
     }
     #endregion
 
@@ -278,15 +278,11 @@ public enum Lengths
     Normal = 1,
     Long = 2,
 }
-#endregion
 
-internal static class ExtensionMethods
+internal record Status
 {
-    internal static string Decode<T>(this T Enum) where T : Enum => typeof(T).GetMember(Enum!.ToString()!).Single().GetCustomAttributes(false).OfType<EnumMemberAttribute>().Single().Value!;
-
-    internal static IEnumerable<T> Shuffle<T>(this IEnumerable<T> Collection) => Collection.OrderBy(_ => PRNG.Next());
-
-    public static T Random<T>(this IEnumerable<T> Collection) => Collection.ElementAt(PRNG.Next(0, Collection.Count()));
-
-    static readonly Random PRNG = new();
+    internal required uint Weekly;
+    internal required IPAddress Address;
+    internal required IEnumerable<string> Maps;
 }
+#endregion

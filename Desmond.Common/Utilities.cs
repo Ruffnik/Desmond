@@ -6,7 +6,7 @@ using System.Xml;
 
 namespace Desmond;
 
-public static class Common
+public static class Utilities
 {
     public static string Name => Assembly.GetEntryAssembly()!.GetName().Name!;
 
@@ -56,4 +56,23 @@ public static class Common
             catch (IOException)
             { }//Don't care if can't delete a particular file at this iteration
     }
+}
+
+public static class ExtensionMethods
+{
+    public static string Decode<T>(this T Enum) where T : Enum
+    {
+        var D1 = typeof(T).GetMember(Enum!.ToString()!);
+        var D2 = D1.Single();
+        var D3 = D2.GetCustomAttributes(false);
+        var D4 = D3.OfType<EnumMemberAttribute>()!;
+        var D5 = D4.SingleOrDefault();
+        return D5?.Value ?? $"{Enum}";
+    }
+
+    public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> Collection) => Collection.OrderBy(_ => PRNG.Next());
+
+    public static T Random<T>(this IEnumerable<T> Collection) => Collection.ElementAt(PRNG.Next(0, Collection.Count()));
+
+    static readonly Random PRNG = new();
 }

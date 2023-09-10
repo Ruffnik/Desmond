@@ -1,20 +1,20 @@
 ﻿namespace Desmond;
 
-internal class Const
+internal static class Const
 {
     #region General
     internal const string XML = "xml";
 
     internal static string CWD => Environment.OSVersion.Platform switch
     {
-        PlatformID.Win32NT => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Common.Name),
+        PlatformID.Win32NT => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Utilities.Name),
         PlatformID.Unix => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Steam"),
         _ => throw new PlatformNotSupportedException()
     };
 
     internal static string[] Resources =
     {
-        Path.Combine(Base, "Web", "images", "favicon.ico"),
+        //Path.Combine(Base, "Web", "images", "favicon.ico"),
         Path.Combine(Base, "Web", "images", "kf2.css"),
         Path.Combine(Base, "Web", "images", "kf2modern.css")
     };

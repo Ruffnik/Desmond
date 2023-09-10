@@ -2,7 +2,7 @@
 
 namespace Desmond;
 
-internal class INI
+internal static class INI
 {
     internal static bool TrySet(string[] Data, string Section, string Key, string Value)
     {

@@ -53,14 +53,5 @@ namespace Desmond {
                 this["StockMaps"] = value;
             }
         }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string WWWRoot {
-            get {
-                return ((string)(this["WWWRoot"]));
-            }
-        }
     }
 }
