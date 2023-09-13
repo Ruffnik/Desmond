@@ -1,4 +1,6 @@
-﻿namespace Desmond;
+﻿using static System.Net.WebRequestMethods;
+
+namespace Desmond;
 
 internal static class Const
 {
@@ -13,18 +15,6 @@ internal static class Const
     };
     #endregion
 
-    #region Frontend
-    internal static string[] Resources =
-    {
-        Path.Combine(Base, "Web", "images", "favicon.ico"),
-        Path.Combine(Base, "Web", "images", "kf2.css"),
-        Path.Combine(Base, "Web", "images", "kf2modern.css"),
-        Path.Combine(Base, "Web", "images", "bg-page.png"),
-        Path.Combine(Base, "Web", "images", "btn_up.png"),
-        Path.Combine(Base, "Web", "images", "btn_down.png")
-    };
-    #endregion
-
     #region SteamCMD
     internal const int AppID = 232130;
     internal const string Success = "Success!";
@@ -36,10 +26,10 @@ internal static class Const
         _ => throw new PlatformNotSupportedException()
     });
 
-    internal static string URL => Environment.OSVersion.Platform switch
+    internal static string URL => "https://steamcdn-a.akamaihd.net/client/installer/" + Environment.OSVersion.Platform switch
     {
-        PlatformID.Win32NT => "https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip",
-        PlatformID.Unix => "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz",
+        PlatformID.Win32NT => "steamcmd.zip",
+        PlatformID.Unix => "steamcmd_linux.tar.gz",
         _ => throw new PlatformNotSupportedException()
     };
 
@@ -58,10 +48,6 @@ internal static class Const
         _ => throw new PlatformNotSupportedException()
     };
 
-    static string Base => Path.Combine(CWD, "steamapps", "common", "kf2server", "KFGame");
-
-    internal static string KFServer => Path.Combine(CWD, "steamapps", "common", "kf2server", "Binaries", "Win64", Binary);
-
     internal static string Process => Environment.OSVersion.Platform switch
     {
         PlatformID.Win32NT => Path.GetFileNameWithoutExtension(Binary),
@@ -69,14 +55,19 @@ internal static class Const
         _ => throw new PlatformNotSupportedException()
     };
 
-    internal static string Logs => Path.Combine(Base, "Logs");
-
     static string Prefix => Environment.OSVersion.Platform switch
     {
         PlatformID.Win32NT => "PC",
         PlatformID.Unix => "Linux",
         _ => throw new PlatformNotSupportedException()
     };
+
+    static string Base => Path.Combine(CWD, "steamapps", "common", "kf2server", "KFGame");
+    internal static string Logs => Path.Combine(Base, "Logs");
+    internal static string Config => Path.Combine(Base, "Config");
+    internal static string WWWRoot => Path.Combine(Base, "Web", "images");
+    internal static string KFServer => Path.Combine(CWD, "steamapps", "common", "kf2server", "Binaries", "Win64", Binary);
+
 
     internal static string KFGame => Prefix + "Server-KFGame.ini";
     internal static string KFEngine => Prefix + "Server-KFEngine.ini";
@@ -90,7 +81,5 @@ internal static class Const
     internal const string IntendedWeekly = "Intended weekly index:";
     internal const string UsedWeekly = "USED Weekly index:";
     internal const string Extension = "log";
-
-    internal static string Config => Path.Combine(Base, "Config");
     #endregion
 }

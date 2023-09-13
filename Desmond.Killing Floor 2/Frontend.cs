@@ -22,12 +22,9 @@ internal static class Frontend
 
     internal static void Update(IEnumerable<KF2Server> Farm, IPAddress? Address = null)
     {
-        if (Resources is null && !Const.Resources.Where(_ => !Path.Exists(_)).Any())
-            Resources = Const.Resources.Select(_ => new Resource() { Name = Path.GetFileName(_), Content = File.ReadAllBytes(_) });
-
         var Title = $"<title>{string.Join(" | ", Farm.Select(_ => _.ServerName!).Distinct())}</title>";
 
-        var Links = $"<link rel=\"icon\" href=\"favicon.ico\" type=\"{Types.ICO.Decode()}\"><link rel=\"stylesheet\" type=\"{Types.CSS.Decode()}\" href=\"kf2.css\"><link rel=\"stylesheet\" type=\"{Types.CSS.Decode()}\" href=\"kf2modern.css\">";
+        var Links = $"<link rel=\"icon\" type=\"{Types.ICO.Decode()}\" href=\"favicon.ico\"><link rel=\"stylesheet\" type=\"{Types.CSS.Decode()}\" href=\"kf2.css\"><link rel=\"stylesheet\" type=\"{Types.CSS.Decode()}\" href=\"kf2modern.css\">";
 
         var Script = $"<script type=\"text/javascript\">function WebAdmin(Port){{window.location.replace(window.location.protocol +\"//\"+window.location.hostname+\":\"+Port)}}</script>";
 
@@ -48,27 +45,56 @@ internal static class Frontend
 
         var Footer = "<footer>" + DateTime.Now.ToString("o") + "</footer>";
 
-        Homepage = Encoding.UTF8.GetBytes($"<!doctype html><head>{Title}{Links}{Script}</head><body>{Table}{Footer}</body></html>");
+        Homepage = $"<!doctype html><head>{Title}{Links}{Script}</head><body>{Table}{Footer}</body></html>";
     }
+
+    static readonly Action<HttpListenerContext> Respond = _ =>
+    {
+        var Payload = Serve(_.Request.RawUrl?.TrimStart('/'));
+        var Response = _.Response;
+        Response.StatusCode = (int)Payload.Status;
+        using var Stream = Response.OutputStream;
+        if (HttpStatusCode.OK == Payload.Status)
+        {
+            Response.ContentLength64 = Payload.Content!.LongLength;
+            Response.ContentType = Payload.Type!.Value.Decode();
+            Stream.Write(Payload.Content, 0, Payload.Content.Length);
+        }
+    };
     #endregion
 
     #region HTTP
     static Response Serve(string? Path) =>
         Path is null ?
-        new() { Status = HttpStatusCode.NotFound } :
+        new(HttpStatusCode.NotFound) :
         string.Empty == Path ?
         ServeHomepage() :
         ServeResource(Path);
 
-    static Response ServeHomepage() => new() { Content = Homepage, Type = Types.HTML, Status = HttpStatusCode.OK };
+    static Response ServeHomepage() => new(Homepage!);
 
     static Response ServeResource(string Name)
     {
         var Type = GetType(Name);
-        if (Type is not null && ResourceExists(Name))
-            return new() { Status = HttpStatusCode.OK, Type = Type, Content = GetResource(Name) };
+        if (Type is not null)
+        {
+            if (Resources.TryGetValue(Name, out var Content))
+                return new(Type.Value, Content);
+            else
+            {
+                var ODS = Path.Combine(Const.WWWRoot, Name);
+                if (File.Exists(ODS))
+                {
+                    Content = File.ReadAllBytes(ODS);
+                    Resources.Add(Name, Content);
+                    return new(Type.Value, Content);
+                }
+                else
+                    return new(HttpStatusCode.NotFound);
+            }
+        }
         else
-            return new() { Status = HttpStatusCode.NotFound };
+            return new(HttpStatusCode.UnsupportedMediaType);
     }
 
     static Types? GetType(string Name)
@@ -83,36 +109,34 @@ internal static class Frontend
     #endregion
 
     #region Plumbing
-    static readonly Action<HttpListenerContext> Respond = Context =>
-    {
-        var Payload = Serve(Context.Request.RawUrl?.Trim('/'));
-        var Response = Context.Response;
-        Response.StatusCode = (int)Payload.Status;
-        if (HttpStatusCode.OK == Payload.Status)
-        {
-            Response.ContentLength64 = Payload.Content!.LongLength;
-            Response.ContentType = ((Types)Payload.Type!).Decode();
-        }
-        var Buffer = Payload.Content;
-        using var Stream = Response.OutputStream;
-        Stream.Write(Buffer, 0, Buffer.Length);
-    };
+    static readonly Dictionary<string, byte[]> Resources = new();
 
-    static bool ResourceExists(string Name) => Resources?.Any(_ => string.Equals(_.Name, Name, StringComparison.InvariantCultureIgnoreCase)) ?? false;
-
-    static byte[] GetResource(string Name) => Resources!.Single(_ => string.Equals(_.Name, Name, StringComparison.InvariantCultureIgnoreCase)).Content;
-
-    static IEnumerable<Resource>? Resources;
-
-    static byte[] Homepage = Array.Empty<byte>();
+    static string? Homepage;
     #endregion
 
     #region Types
     record Response
     {
-        internal byte[] Content = Array.Empty<byte>();
-        internal Types? Type;
-        internal required HttpStatusCode Status;
+        internal readonly byte[]? Content;
+        internal readonly Types? Type;
+        internal readonly HttpStatusCode Status;
+
+        internal Response(string HTML) : this(Types.HTML, Encoding.UTF8.GetBytes(HTML)) { }
+
+        internal Response(Types Type, byte[] Payload)
+        {
+            Status = HttpStatusCode.OK;
+            this.Type = Type;
+            Content = Payload;
+        }
+
+        internal Response(HttpStatusCode Status)
+        {
+            if (HttpStatusCode.OK != Status)
+                this.Status = Status;
+            else
+                throw new ArgumentException($"{Status}", nameof(Status));
+        }
     }
 
     enum Types
@@ -126,11 +150,5 @@ internal static class Frontend
         [EnumMember(Value = "image/png")]
         PNG
     };
-
-    record Resource
-    {
-        required internal string Name;
-        required internal byte[] Content;
-    }
     #endregion
 }
