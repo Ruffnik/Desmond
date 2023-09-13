@@ -66,12 +66,10 @@ internal static class Frontend
     #region HTTP
     static Response Serve(string? Path) =>
         Path is null ?
-        new(HttpStatusCode.NotFound) :
+        new(HttpStatusCode.BadRequest) :
         string.Empty == Path ?
-        ServeHomepage() :
+        new(Homepage!) :
         ServeResource(Path);
-
-    static Response ServeHomepage() => new(Homepage!);
 
     static Response ServeResource(string Name)
     {
