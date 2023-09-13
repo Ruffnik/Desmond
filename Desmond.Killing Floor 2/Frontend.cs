@@ -1,7 +1,4 @@
-﻿//TODO: handle ICO/PNG
-
-using System.Net;
-using System.Net.Sockets;
+﻿using System.Net;
 using System.Runtime.Serialization;
 using System.Text;
 
@@ -15,21 +12,22 @@ internal static class Frontend
         Task.Run(() =>
         {
             Update(Farm);
-            TcpListener Listener = new(IPAddress.Any, 80);
+            HttpListener Listener = new();
+            Listener.Prefixes.Add("http://*:80/");
             Listener.Start();
             while (true)
-                Task.Run(() => Respond(Listener.AcceptTcpClient()));
+                Task.Run(() => Respond(Listener.GetContext()));
         });
     }
 
     internal static void Update(IEnumerable<KF2Server> Farm, IPAddress? Address = null)
     {
-        if (!Const.Resources.Where(_ => !Path.Exists(_)).Any())
-            Resources ??= Const.Resources.Select(_ => new Resource() { Name = Path.GetFileName(_), Content = File.ReadAllText(_) });
+        if (Resources is null && !Const.Resources.Where(_ => !Path.Exists(_)).Any())
+            Resources = Const.Resources.Select(_ => new Resource() { Name = Path.GetFileName(_), Content = File.ReadAllBytes(_) });
 
         var Title = $"<title>{string.Join(" | ", Farm.Select(_ => _.ServerName!).Distinct())}</title>";
 
-        var Links = "<link rel=\"shortcut icon\" href=\"favicon.ico\" type=\"image/x-icon\"><link rel=\"stylesheet\" type=\"text/css\" href=\"kf2.css\"><link rel=\"stylesheet\" type=\"text/css\" href=\"kf2modern.css\">";
+        var Links = $"<link rel=\"icon\" href=\"favicon.ico\" type=\"{Types.ICO.Decode()}\"><link rel=\"stylesheet\" type=\"{Types.CSS.Decode()}\" href=\"kf2.css\"><link rel=\"stylesheet\" type=\"{Types.CSS.Decode()}\" href=\"kf2modern.css\">";
 
         var Script = $"<script type=\"text/javascript\">function WebAdmin(Port){{window.location.replace(window.location.protocol +\"//\"+window.location.hostname+\":\"+Port)}}</script>";
 
@@ -50,88 +48,71 @@ internal static class Frontend
 
         var Footer = "<footer>" + DateTime.Now.ToString("o") + "</footer>";
 
-        Homepage = $"<!doctype html><head>{Title}{Links}{Script}</head><body>{Table}{Footer}</body></html>";
+        Homepage = Encoding.UTF8.GetBytes($"<!doctype html><head>{Title}{Links}{Script}</head><body>{Table}{Footer}</body></html>");
     }
     #endregion
 
     #region HTTP
     static Response Serve(string? Path) =>
         Path is null ?
-        new() { Status = Statuses.Unsupported } :
+        new() { Status = HttpStatusCode.NotFound } :
         string.Empty == Path ?
         ServeHomepage() :
         ServeResource(Path);
 
-    static Response ServeHomepage() => new() { Content = Homepage, Type = Types.HTML, Status = Statuses.OK };
+    static Response ServeHomepage() => new() { Content = Homepage, Type = Types.HTML, Status = HttpStatusCode.OK };
 
     static Response ServeResource(string Name)
     {
         var Type = GetType(Name);
-        if (Type is not null)
-            if (ResourceExists(Name))
-                return new() { Status = Statuses.OK, Type = Type, Content = GetResource(Name) };
-            else
-                return new() { Status = Statuses.NotFound };
+        if (Type is not null && ResourceExists(Name))
+            return new() { Status = HttpStatusCode.OK, Type = Type, Content = GetResource(Name) };
         else
-            return new() { Status = Statuses.Unsupported };
+            return new() { Status = HttpStatusCode.NotFound };
     }
 
     static Types? GetType(string Name)
     {
         foreach (var _ in Enum.GetValues(typeof(Types)))
         {
-            if (string.Equals(((Types)_).Decode().Split('/')[1], Path.GetExtension(Name).TrimStart('.'), StringComparison.InvariantCultureIgnoreCase))
+            if (string.Equals($"{(Types)_}", Path.GetExtension(Name).TrimStart('.'), StringComparison.InvariantCultureIgnoreCase))
                 return (Types)_;
         }
         return null;
     }
-
-    static byte[] Encode(Response Response)
-    {
-        var Result = $@"HTTP/1.0 {(int)Response.Status} {Response.Status.Decode()}";
-        if (Statuses.OK == Response.Status)
-            Result += @$"
-Content-Length: {Response.Content!.Length}
-Content-Type: {Response.Type!.Value.Decode()}
-
-{Response.Content}
-";
-        return Encoding.UTF8.GetBytes(Result);
-    }
-
-    static string? GetPath(string Request) => Request.StartsWith("GET") ? Request.Split(' ')[1].Trim('/') : null;
     #endregion
 
     #region Plumbing
-    static readonly Action<TcpClient> Respond = Client =>
+    static readonly Action<HttpListenerContext> Respond = Context =>
     {
-        var Buffer = new byte[10240];
-        var Stream = Client.GetStream();
-        var Length = Stream.Read(Buffer, 0, Buffer.Length);
-        var Request = Encoding.UTF8.GetString(Buffer, 0, Length);
-
-        var Path = GetPath(Request);
-        var Response = Serve(Path);
-        var Scrap = Encode(Response);
-
-        Stream.Write(Scrap);
+        var Payload = Serve(Context.Request.RawUrl?.Trim('/'));
+        var Response = Context.Response;
+        Response.StatusCode = (int)Payload.Status;
+        if (HttpStatusCode.OK == Payload.Status)
+        {
+            Response.ContentLength64 = Payload.Content!.LongLength;
+            Response.ContentType = ((Types)Payload.Type!).Decode();
+        }
+        var Buffer = Payload.Content;
+        using var Stream = Response.OutputStream;
+        Stream.Write(Buffer, 0, Buffer.Length);
     };
 
     static bool ResourceExists(string Name) => Resources?.Any(_ => string.Equals(_.Name, Name, StringComparison.InvariantCultureIgnoreCase)) ?? false;
 
-    static string GetResource(string Name) => Resources!.Single(_ => string.Equals(_.Name, Name, StringComparison.InvariantCultureIgnoreCase)).Content;
+    static byte[] GetResource(string Name) => Resources!.Single(_ => string.Equals(_.Name, Name, StringComparison.InvariantCultureIgnoreCase)).Content;
 
     static IEnumerable<Resource>? Resources;
 
-    static string Homepage = string.Empty;
+    static byte[] Homepage = Array.Empty<byte>();
     #endregion
 
     #region Types
     record Response
     {
-        internal string? Content;
+        internal byte[] Content = Array.Empty<byte>();
         internal Types? Type;
-        internal required Statuses Status;
+        internal required HttpStatusCode Status;
     }
 
     enum Types
@@ -140,21 +121,16 @@ Content-Type: {Response.Type!.Value.Decode()}
         HTML,
         [EnumMember(Value = "text/css")]
         CSS,
+        [EnumMember(Value = "image/x-icon")]
+        ICO,
+        [EnumMember(Value = "image/png")]
+        PNG
     };
-
-    enum Statuses
-    {
-        OK = 200,
-        [EnumMember(Value = "Not Found")]
-        NotFound = 404,
-        [EnumMember(Value = "Unsupported Media Type")]
-        Unsupported = 415,
-    }
 
     record Resource
     {
         required internal string Name;
-        required internal string Content;
+        required internal byte[] Content;
     }
     #endregion
 }

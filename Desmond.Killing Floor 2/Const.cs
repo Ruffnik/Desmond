@@ -11,12 +11,17 @@ internal static class Const
         PlatformID.Unix => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Steam"),
         _ => throw new PlatformNotSupportedException()
     };
+    #endregion
 
+    #region Frontend
     internal static string[] Resources =
     {
-        //Path.Combine(Base, "Web", "images", "favicon.ico"),
+        Path.Combine(Base, "Web", "images", "favicon.ico"),
         Path.Combine(Base, "Web", "images", "kf2.css"),
-        Path.Combine(Base, "Web", "images", "kf2modern.css")
+        Path.Combine(Base, "Web", "images", "kf2modern.css"),
+        Path.Combine(Base, "Web", "images", "bg-page.png"),
+        Path.Combine(Base, "Web", "images", "btn_up.png"),
+        Path.Combine(Base, "Web", "images", "btn_down.png")
     };
     #endregion
 
