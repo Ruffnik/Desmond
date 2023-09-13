@@ -9,15 +9,11 @@ internal static class Frontend
     #region Business logic
     internal static void Start(IEnumerable<KF2Server> Farm)
     {
-        Task.Run(() =>
-        {
-            Update(Farm);
-            HttpListener Listener = new();
-            Listener.Prefixes.Add("http://*:80/");
-            Listener.Start();
-            while (true)
-                Task.Run(() => Respond(Listener.GetContext()));
-        });
+        Update(Farm);
+        HttpListener Listener = new();
+        Listener.Prefixes.Add("http://*:80/");
+        Listener.Start();
+        Listener.BeginGetContext(new(Callback), Listener);
     }
 
     internal static void Update(IEnumerable<KF2Server> Farm, IPAddress? Address = null)
@@ -46,6 +42,24 @@ internal static class Frontend
         var Footer = "<footer>" + DateTime.Now.ToString("o") + "</footer>";
 
         Homepage = $"<!doctype html><head>{Title}{Links}{Script}</head><body>{Table}{Footer}</body></html>";
+    }
+
+    static void Callback(IAsyncResult _)
+    {
+        var Listener = (HttpListener)_.AsyncState!;
+        Listener.BeginGetContext(new AsyncCallback(Callback), Listener);
+        var Context = Listener.EndGetContext(_);
+
+        var Payload = Serve(Context.Request.RawUrl?.TrimStart('/'));
+        var Response = Context.Response;
+        Response.StatusCode = (int)Payload.Status;
+        using var Stream = Response.OutputStream;
+        if (HttpStatusCode.OK == Payload.Status)
+        {
+            Response.ContentLength64 = Payload.Content!.LongLength;
+            Response.ContentType = Payload.Type!.Value.Decode();
+            Stream.Write(Payload.Content, 0, Payload.Content.Length);
+        }
     }
 
     static readonly Action<HttpListenerContext> Respond = _ =>
@@ -121,11 +135,11 @@ internal static class Frontend
 
         internal Response(string HTML) : this(Types.HTML, Encoding.UTF8.GetBytes(HTML)) { }
 
-        internal Response(Types Type, byte[] Payload)
+        internal Response(Types Type, byte[] Content)
         {
             Status = HttpStatusCode.OK;
             this.Type = Type;
-            Content = Payload;
+            this.Content = Content;
         }
 
         internal Response(HttpStatusCode Status)
