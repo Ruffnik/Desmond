@@ -37,7 +37,6 @@ while (true)
     if (MissingStockMaps.Any())
     {
         Settings.Default.StockMaps = Utilities.EncodeSettings(Utilities.DecodeStrings(Settings.Default.StockMaps).Concat(MissingStockMaps.Shuffle()));
-        Settings.Default.Save();
         Utilities.Serialize(Path.ChangeExtension(nameof(Settings.Default.StockMaps), Const.XML), Path.Combine(CWD, Path.ChangeExtension(string.Join(string.Empty, DateOnly.FromDateTime(DateTime.Now).ToString("o").Split(Path.GetInvalidFileNameChars())), "zip")), Settings.Default.StockMaps);
     }
 
