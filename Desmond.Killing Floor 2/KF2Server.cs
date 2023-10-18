@@ -89,12 +89,12 @@ internal class KF2Server
 
     internal void Kill() => Runner!.Kill();
 
-    internal DynamicState DynamicState
+    internal DynamicState? DynamicState
     {
         get
         {
-            var Title = Runner!.MainWindowTitle.Replace(Const.Players, string.Empty).Replace(Const.Connections, string.Empty).Split(new[] { ':', '(', ')', ',' }).Select(_ => _.Trim());
-            return new() { Map = Title.ElementAt(1), Players = int.Parse(Title.ElementAt(2)), Connections = int.Parse(Title.ElementAt(3)) };
+            var Title = Running ? Runner?.MainWindowTitle.Replace(Const.Players, string.Empty).Replace(Const.Connections, string.Empty).Split(new[] { ':', '(', ')', ',' }).Select(_ => _.Trim()) : null;
+            return Title is not null && 3 < Title.Count() ? new() { Map = Title.ElementAt(1), Players = int.Parse(Title.ElementAt(2)), Connections = int.Parse(Title.ElementAt(3)) } : null;
         }
     }
     #endregion

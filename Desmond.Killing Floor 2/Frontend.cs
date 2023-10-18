@@ -8,53 +8,70 @@ namespace Desmond;
 internal static class Frontend
 {
     #region Business logic
-    internal static void Start(IEnumerable<KF2Server> Farm) => Task.Run(async () =>
-                                                                    {
-                                                                        Update(Farm);
-                                                                        TcpListener Server = new(IPAddress.Any, Const.Port);
-                                                                        Server.Start();
+    internal static void Start(IEnumerable<KF2Server> Farm)
+    {
+        Update(Farm);
+        Task.Run(async () =>
+        {
+            TcpListener Server = new(IPAddress.Any, Const.Port);
+            Server.Start();
 
-                                                                        while (true)
-                                                                        {
-                                                                            var Client = await Server.AcceptTcpClientAsync();
-                                                                            await Task.Run(() =>
-                                                                            {
-                                                                                using var Stream = Client.GetStream();
-                                                                                var Response = ServePath(DecodePath(Encoding.UTF8.GetString(Stream.ReadAll())));
-                                                                                Stream.Write(Encode(Response));
-                                                                            });
-                                                                        }
-                                                                    });
+            while (true)
+            {
+                var Client = await Server.AcceptTcpClientAsync();
+                await Task.Run(() =>
+                {
+                    using var Stream = Client.GetStream();
+                    var Response = ServePath(DecodePath(Encoding.UTF8.GetString(Stream.ReadAll())));
+                    Stream.Write(Encode(Response));
+                });
+            }
+        });
+    }
 
     internal static void Update(IEnumerable<KF2Server> Farm, IPAddress? Address = null)
     {
         _Farm = Farm;
+        _Address = Address;
+    }
 
-        var Title = $"<title>{string.Join(" | ", Farm.Select(_ => _.ServerName!).Distinct())}</title>";
+    static string ServeHomepage()
+    {
+        var Title = _Farm is not null ? $"<title>{string.Join(" | ", _Farm.Select(_ => _.ServerName!).Distinct())}</title>" : Utilities.Name;
 
         var Links = $"<link rel=\"icon\" type=\"{Types.ICO.Decode()}\" href=\"favicon.ico\"><link rel=\"stylesheet\" type=\"{Types.CSS.Decode()}\" href=\"kf2.css\"><link rel=\"stylesheet\" type=\"{Types.CSS.Decode()}\" href=\"kf2modern.css\">";
 
         //var Script = $"<script type=\"text/javascript\">function WebAdmin(Port){{window.location.replace(window.location.protocol +\"//\"+window.location.hostname+\":\"+Port)}}</script>";
 
-        var Table = "<table><tr>" +
-            string.Join("</tr><tr>", Farm.Select(Server =>
+        var Body = _Farm is not null ?
+            "<table><tr>" +
+            string.Join("</tr><tr>", _Farm.Select(Server =>
             {
-                var Connect = Address is null ? string.Empty : $"<a href=\"steam://rungameid/232090//-SteamConnectIP={Address}:{Server.Port}\">";
-                var Closer = Address is null ? string.Empty : "</a>";
-                var Administrate = Address is null ? string.Empty : $"<a href=\"http://{Address}:{Server.AdminPort}\">";
+                var Connect = _Address is null ? string.Empty : $"<a href=\"steam://rungameid/232090//-SteamConnectIP={_Address}:{Server.Port}\">";
+                var Closer = _Address is null ? string.Empty : "</a>";
+                var Administrate = _Address is null ? string.Empty : $"<a href=\"http://{_Address}:{Server.AdminPort}\">";
 
-                return
-               //$"<td><a href=\"steam://connect/{Address}:{Server.Port}\">&#x267F;</a></td>" +//TODO: connect in-game somehow
-               $"{"<td>"}{(Server.AdminPort is not null ?
-                   $"{Administrate}&#x1F9D9{Closer}" :
-                   "&#x274C")}</td>" +
-                   $"<td>{Connect}{Server.ConfigSubDir}{Closer}</td>";
+                var Cell =
+                $"{"<td>"}{(Server.AdminPort is not null ?
+                $"{Administrate}&#x1F9D9{Closer}" :
+                "&#x274C")}</td>" +
+                $"<td>{Connect}{Server.ConfigSubDir}{Closer}</td>";//TODO: connect in-game somehow
+
+                var State = Server.DynamicState;
+                if (State is not null)
+                    Cell +=
+                    $"<td>{State!.Map}</td>" +
+                    $"<td>{State!.Players}</td>" +
+                    $"<td>{State!.Connections}</td>";
+
+                return Cell;
             }
-        )) + "</tr></table>";
+        )) + "</tr></table>"
+        : string.Empty;
 
-        var Footer = "<footer>" + DateTime.Now.ToString("o") + "</footer>";
+        var Footer = "<footer>" + Utilities.Name + "</footer>";
 
-        Homepage = $"<!doctype html><head>{Title}{Links}</head><body>{Table}{Footer}</body></html>";
+        return $"<!doctype html><head>{Title}{Links}</head><body>{Body}{Footer}</body></html>";
     }
     #endregion
 
@@ -81,7 +98,7 @@ Content-Type: {Response.Type!.Value.Decode()}
         Path is null ?
         new(HttpStatusCode.BadRequest) :
         string.Empty == Path ?
-        new(Homepage!) :
+        new(ServeHomepage()) :
         ServeResource(Path);
 
     static Response ServeResource(string Name)
@@ -119,10 +136,8 @@ Content-Type: {Response.Type!.Value.Decode()}
 
     #region Plumbing
     static readonly Dictionary<string, byte[]> Resources = new();
-
-    static string? Homepage;
-
     static IEnumerable<KF2Server>? _Farm;
+    static IPAddress? _Address;
     #endregion
 
     #region Types
