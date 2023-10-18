@@ -30,7 +30,7 @@ while (true)
 {
     KF2Server.Clean();
     KF2Server.TryUpdate();
-    var Status = KF2Server.GetStatus();
+    var Status = KF2Server.GetStaticState();
     Frontend.Update(Farm, Status.Address);
 
     var MissingStockMaps = Status.Maps.Where(_ => !Settings.Default.StockMaps.Contains(_));

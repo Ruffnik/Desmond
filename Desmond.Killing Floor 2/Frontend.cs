@@ -11,7 +11,7 @@ internal static class Frontend
     internal static void Start(IEnumerable<KF2Server> Farm) => Task.Run(async () =>
                                                                     {
                                                                         Update(Farm);
-                                                                        TcpListener Server = new(IPAddress.Any, 80);
+                                                                        TcpListener Server = new(IPAddress.Any, Const.Port);
                                                                         Server.Start();
 
                                                                         while (true)
@@ -20,7 +20,7 @@ internal static class Frontend
                                                                             await Task.Run(() =>
                                                                             {
                                                                                 using var Stream = Client.GetStream();
-                                                                                var Response = Serve(DecodePath(Encoding.UTF8.GetString(Stream.ReadAll())));
+                                                                                var Response = ServePath(DecodePath(Encoding.UTF8.GetString(Stream.ReadAll())));
                                                                                 Stream.Write(Encode(Response));
                                                                             });
                                                                         }
@@ -28,6 +28,8 @@ internal static class Frontend
 
     internal static void Update(IEnumerable<KF2Server> Farm, IPAddress? Address = null)
     {
+        _Farm = Farm;
+
         var Title = $"<title>{string.Join(" | ", Farm.Select(_ => _.ServerName!).Distinct())}</title>";
 
         var Links = $"<link rel=\"icon\" type=\"{Types.ICO.Decode()}\" href=\"favicon.ico\"><link rel=\"stylesheet\" type=\"{Types.CSS.Decode()}\" href=\"kf2.css\"><link rel=\"stylesheet\" type=\"{Types.CSS.Decode()}\" href=\"kf2modern.css\">";
@@ -41,12 +43,12 @@ internal static class Frontend
                 var Closer = Address is null ? string.Empty : "</a>";
                 var Administrate = Address is null ? string.Empty : $"<a href=\"http://{Address}:{Server.AdminPort}\">";
 
-                return $"<td>{Connect}{Server.ConfigSubDir}{Closer}</td>" +
+                return
                //$"<td><a href=\"steam://connect/{Address}:{Server.Port}\">&#x267F;</a></td>" +//TODO: connect in-game somehow
                $"{"<td>"}{(Server.AdminPort is not null ?
                    $"{Administrate}&#x1F9D9{Closer}" :
-                   "&#x274C")}" +
-                   "</td>";
+                   "&#x274C")}</td>" +
+                   $"<td>{Connect}{Server.ConfigSubDir}{Closer}</td>";
             }
         )) + "</tr></table>";
 
@@ -75,7 +77,7 @@ Content-Type: {Response.Type!.Value.Decode()}
         return Result.ToArray();
     }
 
-    static Response Serve(string? Path) =>
+    static Response ServePath(string? Path) =>
         Path is null ?
         new(HttpStatusCode.BadRequest) :
         string.Empty == Path ?
@@ -119,6 +121,8 @@ Content-Type: {Response.Type!.Value.Decode()}
     static readonly Dictionary<string, byte[]> Resources = new();
 
     static string? Homepage;
+
+    static IEnumerable<KF2Server>? _Farm;
     #endregion
 
     #region Types

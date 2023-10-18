@@ -31,7 +31,7 @@ internal class KF2Server
 
     internal static void KillAll() => Process.GetProcessesByName(Const.Process).ToList().ForEach(_ => _.Kill());
 
-    internal static Status GetStatus()
+    internal static PersistentState GetStaticState()
     {
         var Runner = new KF2Server(true);
         Runner.Run();
@@ -88,6 +88,15 @@ internal class KF2Server
     internal void Wait() => Runner!.WaitForExit();
 
     internal void Kill() => Runner!.Kill();
+
+    internal DynamicState DynamicState
+    {
+        get
+        {
+            var Title = Runner!.MainWindowTitle.Replace(Const.Players, string.Empty).Replace(Const.Connections, string.Empty).Split(new[] { ':', '(', ')', ',' }).Select(_ => _.Trim());
+            return new() { Map = Title.ElementAt(1), Players = int.Parse(Title.ElementAt(2)), Connections = int.Parse(Title.ElementAt(3)) };
+        }
+    }
     #endregion
 
     #region Plumbing
@@ -279,10 +288,16 @@ public enum Lengths
     Long = 2,
 }
 
-internal record Status
+internal record PersistentState
 {
     internal required uint Weekly;
     internal required IPAddress Address;
     internal required IEnumerable<string> Maps;
+}
+
+internal record DynamicState
+{
+    internal required string Map;
+    internal required int Players, Connections;
 }
 #endregion

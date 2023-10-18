@@ -11,6 +11,14 @@ internal static class Const
         PlatformID.Unix => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Steam"),
         _ => throw new PlatformNotSupportedException()
     };
+
+    internal const int Port =
+#if DEBUG
+        8080
+#else
+80
+#endif
+        ;
     #endregion
 
     #region SteamCMD
@@ -79,5 +87,7 @@ internal static class Const
     internal const string IntendedWeekly = "Intended weekly index:";
     internal const string UsedWeekly = "USED Weekly index:";
     internal const string Extension = "log";
+    internal const string Players = "players";
+    internal const string Connections = "connections";
     #endregion
 }
