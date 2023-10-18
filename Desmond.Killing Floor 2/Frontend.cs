@@ -69,7 +69,7 @@ internal static class Frontend
         )) + "</tr></table>"
         : string.Empty;
 
-        var Footer = "<footer>" + Utilities.Name + "</footer>";
+        var Footer = "<footer><a href=\"https://github.com/Ruffnik/Desmond\">GitHub.com/Ruffnik/Desmond</a></footer>";
 
         return $"<!doctype html><head>{Title}{Links}</head><body>{Body}{Footer}</body></html>";
     }

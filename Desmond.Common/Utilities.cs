@@ -68,11 +68,9 @@ public static class ExtensionMethods
 
     public static byte[] ReadAll(this Stream Stream)
     {
-        int Last;
-        var Buffer = new byte[10240];
-        Last = Stream.Read(Buffer, 0, Buffer.Length);
-        Console.WriteLine($"Read {Last} bytes");
-        return Buffer[0..Last];
+        var Buffer = new byte[10240];//https://gist.github.com/NikolayIT/91dee5fea4386199ea6171de80eb2be4
+        var Count = Stream.Read(Buffer, 0, Buffer.Length);
+        return Buffer[0..Count];
     }
 
     static readonly Random PRNG = new();
