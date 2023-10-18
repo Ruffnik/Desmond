@@ -1,6 +1,4 @@
-﻿using static System.Net.WebRequestMethods;
-
-namespace Desmond;
+﻿namespace Desmond;
 
 internal static class Const
 {

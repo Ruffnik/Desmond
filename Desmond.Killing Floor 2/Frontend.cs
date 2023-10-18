@@ -9,39 +9,39 @@ internal static class Frontend
     #region Business logic
     internal static void Start(IEnumerable<KF2Server> Farm)
     {
-        Update(Farm);
-        HttpListener Listener = new();
-        Listener.Prefixes.Add("http://*:80/");
-        Listener.Start();
-        Listener.BeginGetContext(new(Callback), Listener);
+        //Update(Farm);
+        //HttpListener Listener = new() { IgnoreWriteExceptions = true };
+        //Listener.Prefixes.Add("http://*:8080/");
+        //Listener.Start();
+        //Listener.BeginGetContext(new(Callback), Listener);
     }
 
     internal static void Update(IEnumerable<KF2Server> Farm, IPAddress? Address = null)
     {
-        var Title = $"<title>{string.Join(" | ", Farm.Select(_ => _.ServerName!).Distinct())}</title>";
+        //var Title = $"<title>{string.Join(" | ", Farm.Select(_ => _.ServerName!).Distinct())}</title>";
 
-        var Links = $"<link rel=\"icon\" type=\"{Types.ICO.Decode()}\" href=\"favicon.ico\"><link rel=\"stylesheet\" type=\"{Types.CSS.Decode()}\" href=\"kf2.css\"><link rel=\"stylesheet\" type=\"{Types.CSS.Decode()}\" href=\"kf2modern.css\">";
+        //var Links = $"<link rel=\"icon\" type=\"{Types.ICO.Decode()}\" href=\"favicon.ico\"><link rel=\"stylesheet\" type=\"{Types.CSS.Decode()}\" href=\"kf2.css\"><link rel=\"stylesheet\" type=\"{Types.CSS.Decode()}\" href=\"kf2modern.css\">";
 
-        var Script = $"<script type=\"text/javascript\">function WebAdmin(Port){{window.location.replace(window.location.protocol +\"//\"+window.location.hostname+\":\"+Port)}}</script>";
+        //var Script = $"<script type=\"text/javascript\">function WebAdmin(Port){{window.location.replace(window.location.protocol +\"//\"+window.location.hostname+\":\"+Port)}}</script>";
 
-        var Table = "<table><tr>" +
-            string.Join("</tr><tr>", Farm.Select(Server =>
-            {
-                var Opener = null == Address ? string.Empty : $"<a href=\"steam://rungameid/232090//-SteamConnectIP={Address}:{Server.Port}\">";
-                var Closer = null == Address ? string.Empty : "</a>";
+        //var Table = "<table><tr>" +
+        //    string.Join("</tr><tr>", Farm.Select(Server =>
+        //    {
+        //        var Opener = null == Address ? string.Empty : $"<a href=\"steam://rungameid/232090//-SteamConnectIP={Address}:{Server.Port}\">";
+        //        var Closer = null == Address ? string.Empty : "</a>";
 
-                return $"<td>{Opener}{Server.ConfigSubDir}{Closer}</td>" +
-               //$"<td><a href=\"steam://connect/{Address}:{Server.Port}\">&#x267F;</a></td>" +//TODO: connect in-game somehow
-               $"{"<td>"}{(Server.AdminPort is not null ?
-                   $"<a href=# onclick=\"WebAdmin(" + Server.AdminPort + ")\">&#x1F9D9</a>" :
-                   "&#x274C")}" +
-                   "</td>";
-            }
-        )) + "</tr></table>";
+        //        return $"<td>{Opener}{Server.ConfigSubDir}{Closer}</td>" +
+        //       //$"<td><a href=\"steam://connect/{Address}:{Server.Port}\">&#x267F;</a></td>" +//TODO: connect in-game somehow
+        //       $"{"<td>"}{(Server.AdminPort is not null ?
+        //           $"<a href=# onclick=\"WebAdmin(" + Server.AdminPort + ")\">&#x1F9D9</a>" :
+        //           "&#x274C")}" +
+        //           "</td>";
+        //    }
+        //)) + "</tr></table>";
 
-        var Footer = "<footer>" + DateTime.Now.ToString("o") + "</footer>";
+        //var Footer = "<footer>" + DateTime.Now.ToString("o") + "</footer>";
 
-        Homepage = $"<!doctype html><head>{Title}{Links}{Script}</head><body>{Table}{Footer}</body></html>";
+        //Homepage = $"<!doctype html><head>{Title}{Links}{Script}</head><body>{Table}{Footer}</body></html>";
     }
 
     static void Callback(IAsyncResult _)
@@ -61,20 +61,6 @@ internal static class Frontend
             Stream.Write(Payload.Content, 0, Payload.Content.Length);
         }
     }
-
-    static readonly Action<HttpListenerContext> Respond = _ =>
-    {
-        var Payload = Serve(_.Request.RawUrl?.TrimStart('/'));
-        var Response = _.Response;
-        Response.StatusCode = (int)Payload.Status;
-        using var Stream = Response.OutputStream;
-        if (HttpStatusCode.OK == Payload.Status)
-        {
-            Response.ContentLength64 = Payload.Content!.LongLength;
-            Response.ContentType = Payload.Type!.Value.Decode();
-            Stream.Write(Payload.Content, 0, Payload.Content.Length);
-        }
-    };
     #endregion
 
     #region HTTP
@@ -112,10 +98,8 @@ internal static class Frontend
     static Types? GetType(string Name)
     {
         foreach (var _ in Enum.GetValues(typeof(Types)))
-        {
             if (string.Equals($"{(Types)_}", Path.GetExtension(Name).TrimStart('.'), StringComparison.InvariantCultureIgnoreCase))
                 return (Types)_;
-        }
         return null;
     }
     #endregion
