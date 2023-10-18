@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using Desmond;
 
-AppDomain.CurrentDomain.UnhandledException += (object _, UnhandledExceptionEventArgs e) => Console.WriteLine($"{e}");
+AppDomain.CurrentDomain.UnhandledException += (object _, UnhandledExceptionEventArgs e) => Console.Error.Write($"{e}");
 Settings.Default.PropertyChanged += (object? sender, PropertyChangedEventArgs e) => Settings.Default.Save();
 
 Console.Title = Utilities.Name;
@@ -23,8 +23,8 @@ else
     });
 }
 
-Frontend.Start(Farm);
 KF2Server.KillAll();
+Frontend.Start(Farm);
 
 while (true)
 {

@@ -3,7 +3,7 @@ using System.IO.Compression;
 using Desmond;
 using Microsoft.VisualBasic.FileIO;
 
-AppDomain.CurrentDomain.UnhandledException += (object _, UnhandledExceptionEventArgs e) => Console.WriteLine($"{e}");
+AppDomain.CurrentDomain.UnhandledException += (object _, UnhandledExceptionEventArgs e) => Console.Error.WriteLine($"{e}");
 Console.Title = Utilities.Name;
 
 #region Setup
