@@ -19,10 +19,6 @@ internal static class Frontend
                                                                             var Client = await Server.AcceptTcpClientAsync();
                                                                             await Task.Run(() =>
                                                                             {
-                                                                                //This forces the task to always run asynchronously
-                                                                                //Not sure if this is needed in the first place
-                                                                                //Leaving it in for now, remove comment if apropriate problems arise in field
-                                                                                //await Task.Yield();
                                                                                 using var Stream = Client.GetStream();
                                                                                 var Response = Serve(DecodePath(Encoding.UTF8.GetString(Stream.ReadAll())));
                                                                                 Stream.Write(Encode(Response));
@@ -36,18 +32,19 @@ internal static class Frontend
 
         var Links = $"<link rel=\"icon\" type=\"{Types.ICO.Decode()}\" href=\"favicon.ico\"><link rel=\"stylesheet\" type=\"{Types.CSS.Decode()}\" href=\"kf2.css\"><link rel=\"stylesheet\" type=\"{Types.CSS.Decode()}\" href=\"kf2modern.css\">";
 
-        var Script = $"<script type=\"text/javascript\">function WebAdmin(Port){{window.location.replace(window.location.protocol +\"//\"+window.location.hostname+\":\"+Port)}}</script>";
+        //var Script = $"<script type=\"text/javascript\">function WebAdmin(Port){{window.location.replace(window.location.protocol +\"//\"+window.location.hostname+\":\"+Port)}}</script>";
 
         var Table = "<table><tr>" +
             string.Join("</tr><tr>", Farm.Select(Server =>
             {
-                var Opener = null == Address ? string.Empty : $"<a href=\"steam://rungameid/232090//-SteamConnectIP={Address}:{Server.Port}\">";
-                var Closer = null == Address ? string.Empty : "</a>";
+                var Connect = Address is null ? string.Empty : $"<a href=\"steam://rungameid/232090//-SteamConnectIP={Address}:{Server.Port}\">";
+                var Closer = Address is null ? string.Empty : "</a>";
+                var Administrate = Address is null ? string.Empty : $"<a href=\"http://{Address}:{Server.AdminPort}\">";
 
-                return $"<td>{Opener}{Server.ConfigSubDir}{Closer}</td>" +
+                return $"<td>{Connect}{Server.ConfigSubDir}{Closer}</td>" +
                //$"<td><a href=\"steam://connect/{Address}:{Server.Port}\">&#x267F;</a></td>" +//TODO: connect in-game somehow
                $"{"<td>"}{(Server.AdminPort is not null ?
-                   $"<a href=# onclick=\"WebAdmin(" + Server.AdminPort + ")\">&#x1F9D9</a>" :
+                   $"{Administrate}&#x1F9D9{Closer}" :
                    "&#x274C")}" +
                    "</td>";
             }
@@ -55,7 +52,7 @@ internal static class Frontend
 
         var Footer = "<footer>" + DateTime.Now.ToString("o") + "</footer>";
 
-        Homepage = $"<!doctype html><head>{Title}{Links}{Script}</head><body>{Table}{Footer}</body></html>";
+        Homepage = $"<!doctype html><head>{Title}{Links}</head><body>{Table}{Footer}</body></html>";
     }
     #endregion
 
@@ -71,13 +68,10 @@ internal static class Frontend
         IEnumerable<byte> Result = Encoding.UTF8.GetBytes(@$"HTTP/1.1 {(int)Response.Status} {Response.Status}
 ");
         if (HttpStatusCode.OK == Response.Status)
-        {
             Result = Result.Concat(Encoding.UTF8.GetBytes(@$"Content-Length: {Response.Content!.LongLength}
 Content-Type: {Response.Type!.Value.Decode()}
 
-"));
-            Result = Result.Concat(Response.Content!);
-        }
+")).Concat(Response.Content!);
         return Result.ToArray();
     }
 
