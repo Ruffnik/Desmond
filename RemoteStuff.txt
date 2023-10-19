@@ -1,0 +1,5 @@
+Server:
+Enable-PSRemoting -Force
+
+Client:
+winrm set winrm/config/client @{TrustedHosts="Host"}

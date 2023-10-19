@@ -18,13 +18,17 @@ internal static class Frontend
 
             while (true)
             {
-                var Client = await Server.AcceptTcpClientAsync();
-                await Task.Run(() =>
-                {
-                    using var Stream = Client.GetStream();
-                    var Response = ServePath(DecodePath(Encoding.UTF8.GetString(Stream.ReadAll())));
-                    Stream.Write(Encode(Response));
-                });
+                var Client = Server.AcceptTcpClient();
+                using var Stream = Client.GetStream();
+                var Response = ServePath(DecodePath(Encoding.UTF8.GetString(Stream.ReadAll())));
+                Stream.Write(Encode(Response));
+                //    var Client = await Server.AcceptTcpClientAsync();
+                //    await Task.Run(() =>
+                //    {
+                //        using var Stream = Client.GetStream();
+                //        var Response = ServePath(DecodePath(Encoding.UTF8.GetString(Stream.ReadAll())));
+                //        Stream.Write(Encode(Response));
+                //    });
             }
         });
     }

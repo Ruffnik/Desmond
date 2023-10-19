@@ -3,11 +3,16 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33213.308
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Desmond.TeamSpeak", "Desmond.TeamSpeak\Desmond.TeamSpeak.csproj", "{54280E61-CEA8-4914-A8AC-16201D5C39D4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Desmond.TeamSpeak", "Desmond.TeamSpeak\Desmond.TeamSpeak.csproj", "{54280E61-CEA8-4914-A8AC-16201D5C39D4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Desmond.Common\Common.csproj", "{DB6BE4AD-E186-4279-AB2D-C8A9073FC9ED}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Common", "Desmond.Common\Common.csproj", "{DB6BE4AD-E186-4279-AB2D-C8A9073FC9ED}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Desmond.Killing Floor 2", "Desmond.Killing Floor 2\Desmond.Killing Floor 2.csproj", "{678D4B56-D1CC-4942-8598-DE098E6CD1AF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Desmond.Killing Floor 2", "Desmond.Killing Floor 2\Desmond.Killing Floor 2.csproj", "{678D4B56-D1CC-4942-8598-DE098E6CD1AF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7D101E9C-9A32-4242-ABB4-BF47EBD6B63C}"
+	ProjectSection(SolutionItems) = preProject
+		RemoteStuff.txt = RemoteStuff.txt
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
