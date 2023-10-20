@@ -1,7 +1,7 @@
 ﻿using System.Net;
-using System.Net.Sockets;
 using System.Runtime.Serialization;
 using System.Text;
+using HttpServerLite;
 
 namespace Desmond;
 
@@ -11,26 +11,31 @@ internal static class Frontend
     internal static void Start(IEnumerable<KF2Server> Farm)
     {
         Update(Farm);
-        Task.Run(async () =>
-        {
-            TcpListener Server = new(IPAddress.Any, Const.Port);
-            Server.Start();
 
-            while (true)
-            {
-                var Client = Server.AcceptTcpClient();
-                using var Stream = Client.GetStream();
-                var Response = ServePath(DecodePath(Encoding.UTF8.GetString(Stream.ReadAll())));
-                Stream.Write(Encode(Response));
-                //    var Client = await Server.AcceptTcpClientAsync();
-                //    await Task.Run(() =>
-                //    {
-                //        using var Stream = Client.GetStream();
-                //        var Response = ServePath(DecodePath(Encoding.UTF8.GetString(Stream.ReadAll())));
-                //        Stream.Write(Encode(Response));
-                //    });
-            }
-        });
+        Webserver Server = new(Route);
+        Server.Settings.Headers.Connection = "keep-alive";
+        Server.Start();
+
+        //Task.Run(() =>
+        //{
+        //    TcpListener Server = new(IPAddress.Any, Const.Port);
+        //    Server.Start();
+
+        //    while (true)
+        //    {
+        //        var Client = Server.AcceptTcpClient();
+        //        using var Stream = Client.GetStream();
+        //        var Response = ServePath(DecodePath(Encoding.UTF8.GetString(Stream.ReadAll())));
+        //        Stream.Write(Encode(Response));
+        //        //    var Client = await Server.AcceptTcpClientAsync();
+        //        //    await Task.Run(() =>
+        //        //    {
+        //        //        using var Stream = Client.GetStream();
+        //        //        var Response = ServePath(DecodePath(Encoding.UTF8.GetString(Stream.ReadAll())));
+        //        //        Stream.Write(Encode(Response));
+        //        //    });
+        //    }
+        //});
     }
 
     internal static void Update(IEnumerable<KF2Server> Farm, IPAddress? Address = null)
@@ -39,13 +44,27 @@ internal static class Frontend
         _Address = Address;
     }
 
+    static async Task Route(HttpContext Context)
+    {
+        var Response = ServePath(Context.Request.Url.WithoutQuery.TrimStart('/'));
+        Context.Response.StatusCode = (int)Response.Status;
+        if (HttpStatusCode.OK == Response.Status)
+        {
+            Context.Response.ContentLength = Response.Content!.LongLength;
+            Context.Response.ContentType = Response.Type!.Value.Decode();
+            await Context.Response.SendAsync(Response.Content);
+        }
+        else
+            await Context.Response.SendAsync(string.Empty);
+    }
+
     static string ServeHomepage()
     {
         var Title = _Farm is not null ? $"<title>{string.Join(" | ", _Farm.Select(_ => _.ServerName!).Distinct())}</title>" : Utilities.Name;
 
         var Links = $"<link rel=\"icon\" type=\"{Types.ICO.Decode()}\" href=\"favicon.ico\"><link rel=\"stylesheet\" type=\"{Types.CSS.Decode()}\" href=\"kf2.css\"><link rel=\"stylesheet\" type=\"{Types.CSS.Decode()}\" href=\"kf2modern.css\">";
 
-        //var Script = $"<script type=\"text/javascript\">function WebAdmin(Port){{window.location.replace(window.location.protocol +\"//\"+window.location.hostname+\":\"+Port)}}</script>";
+        var Script = $"<script type=\"{Types.JS.Decode()}\">function WebAdmin(Port){{window.open(window.location.protocol +\"//\"+window.location.hostname+\":\"+Port)}}</script>";
 
         var Body = _Farm is not null ?
             "<table><tr>" +
@@ -53,7 +72,7 @@ internal static class Frontend
             {
                 var Connect = _Address is null ? string.Empty : $"<a href=\"steam://rungameid/232090//-SteamConnectIP={_Address}:{Server.Port}\">";
                 var Closer = _Address is null ? string.Empty : "</a>";
-                var Administrate = _Address is null ? string.Empty : $"<a href=\"http://{_Address}:{Server.AdminPort}\">";
+                var Administrate = _Address is null ? string.Empty : $"<a href=\"javascript:WebAdmin({Server.AdminPort})\">";
 
                 var Cell =
                 $"{"<td>"}{(Server.AdminPort is not null ?
@@ -75,7 +94,7 @@ internal static class Frontend
 
         var Footer = "<footer><a href=\"https://github.com/Ruffnik/Desmond\">GitHub.com/Ruffnik/Desmond</a></footer>";
 
-        return $"<!doctype html><head>{Title}{Links}</head><body>{Body}{Footer}</body></html>";
+        return $"<!doctype html><head>{Title}{Links}{Script}</head><body>{Body}{Footer}</body></html>";
     }
     #endregion
 
@@ -178,7 +197,9 @@ Content-Type: {Response.Type!.Value.Decode()}
         [EnumMember(Value = "image/x-icon")]
         ICO,
         [EnumMember(Value = "image/png")]
-        PNG
+        PNG,
+        [EnumMember(Value = "text/javascript")]
+        JS
     };
     #endregion
 }
