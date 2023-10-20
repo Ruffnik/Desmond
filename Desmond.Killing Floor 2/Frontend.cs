@@ -11,31 +11,9 @@ internal static class Frontend
     internal static void Start(IEnumerable<KF2Server> Farm)
     {
         Update(Farm);
-
-        Webserver Server = new(Route);
+        Webserver Server = new("+", Const.Port, Route);
         Server.Settings.Headers.Connection = "keep-alive";
         Server.Start();
-
-        //Task.Run(() =>
-        //{
-        //    TcpListener Server = new(IPAddress.Any, Const.Port);
-        //    Server.Start();
-
-        //    while (true)
-        //    {
-        //        var Client = Server.AcceptTcpClient();
-        //        using var Stream = Client.GetStream();
-        //        var Response = ServePath(DecodePath(Encoding.UTF8.GetString(Stream.ReadAll())));
-        //        Stream.Write(Encode(Response));
-        //        //    var Client = await Server.AcceptTcpClientAsync();
-        //        //    await Task.Run(() =>
-        //        //    {
-        //        //        using var Stream = Client.GetStream();
-        //        //        var Response = ServePath(DecodePath(Encoding.UTF8.GetString(Stream.ReadAll())));
-        //        //        Stream.Write(Encode(Response));
-        //        //    });
-        //    }
-        //});
     }
 
     internal static void Update(IEnumerable<KF2Server> Farm, IPAddress? Address = null)
@@ -46,7 +24,7 @@ internal static class Frontend
 
     static async Task Route(HttpContext Context)
     {
-        var Response = ServePath(Context.Request.Url.WithoutQuery.TrimStart('/'));
+        var Response = ServePath(Context.Request.Url.WithoutQuery.TrimStart(Const.Separator));
         Context.Response.StatusCode = (int)Response.Status;
         if (HttpStatusCode.OK == Response.Status)
         {
@@ -62,17 +40,17 @@ internal static class Frontend
     {
         var Title = _Farm is not null ? $"<title>{string.Join(" | ", _Farm.Select(_ => _.ServerName!).Distinct())}</title>" : Utilities.Name;
 
-        var Links = $"<link rel=\"icon\" type=\"{Types.ICO.Decode()}\" href=\"favicon.ico\"><link rel=\"stylesheet\" type=\"{Types.CSS.Decode()}\" href=\"kf2.css\"><link rel=\"stylesheet\" type=\"{Types.CSS.Decode()}\" href=\"kf2modern.css\">";
+        var Links = $"<link rel='icon' type='{Types.ICO.Decode()}' href='favicon.ico'><link rel='stylesheet' type='{Types.CSS.Decode()}' href='kf2.css'><link rel='stylesheet' type='{Types.CSS.Decode()}' href='kf2modern.css'>";
 
-        var Script = $"<script type=\"{Types.JS.Decode()}\">function WebAdmin(Port){{window.open(window.location.protocol +\"//\"+window.location.hostname+\":\"+Port)}}</script>";
+        var Script = $"<script type='{Types.JS.Decode()}'>function WebAdmin(Port){{window.open(window.location.protocol +'//'+window.location.hostname+':'+Port)}}</script>";
 
         var Body = _Farm is not null ?
             "<table><tr>" +
             string.Join("</tr><tr>", _Farm.Select(Server =>
             {
-                var Connect = _Address is null ? string.Empty : $"<a href=\"steam://rungameid/232090//-SteamConnectIP={_Address}:{Server.Port}\">";
+                var Connect = _Address is null ? string.Empty : $"<a href='steam://rungameid/232090//-SteamConnectIP={_Address}:{Server.Port}'>";
                 var Closer = _Address is null ? string.Empty : "</a>";
-                var Administrate = _Address is null ? string.Empty : $"<a href=\"javascript:WebAdmin({Server.AdminPort})\">";
+                var Administrate = _Address is null ? string.Empty : $"<a href='javascript:WebAdmin({Server.AdminPort})'>";
 
                 var Cell =
                 $"{"<td>"}{(Server.AdminPort is not null ?
@@ -92,31 +70,13 @@ internal static class Frontend
         )) + "</tr></table>"
         : string.Empty;
 
-        var Footer = "<footer><a href=\"https://github.com/Ruffnik/Desmond\">GitHub.com/Ruffnik/Desmond</a></footer>";
+        var Footer = "<footer><a href='https://github.com/Ruffnik/Desmond'>GitHub.com/Ruffnik/Desmond</a></footer>";
 
         return $"<!doctype html><head>{Title}{Links}{Script}</head><body>{Body}{Footer}</body></html>";
     }
     #endregion
 
     #region HTTP
-    static string? DecodePath(string Request)
-    {
-        var Parts = Request.Split(' ');
-        return "GET" == Parts[0] ? Parts[1].TrimStart('/').Replace('/', Path.DirectorySeparatorChar) : null;
-    }
-
-    static byte[] Encode(Response Response)
-    {
-        IEnumerable<byte> Result = Encoding.UTF8.GetBytes(@$"HTTP/1.1 {(int)Response.Status} {Response.Status}
-");
-        if (HttpStatusCode.OK == Response.Status)
-            Result = Result.Concat(Encoding.UTF8.GetBytes(@$"Content-Length: {Response.Content!.LongLength}
-Content-Type: {Response.Type!.Value.Decode()}
-
-")).Concat(Response.Content!);
-        return Result.ToArray();
-    }
-
     static Response ServePath(string? Path) =>
         Path is null ?
         new(HttpStatusCode.BadRequest) :

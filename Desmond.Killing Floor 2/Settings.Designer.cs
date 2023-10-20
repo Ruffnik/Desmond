@@ -44,7 +44,8 @@ namespace Desmond {
             "ng>KF-Elysium</string>\r\n  <string>KF-Dystopia2029</string>\r\n  <string>KF-Moonbas" +
             "e</string>\r\n  <string>KF-Netherhold</string>\r\n  <string>KF-CarillonHamlet</strin" +
             "g>\r\n  <string>KF-Rig</string>\r\n  <string>KF-BarmwichTown</string>\r\n  <string>KF-" +
-            "Crash</string>\r\n  <string>KF-Subduction</string>\r\n</ArrayOfString>")]
+            "Crash</string>\r\n  <string>KF-Subduction</string>\r\n  <string>KF-CastleVolter</str" +
+            "ing>\r\n</ArrayOfString>")]
         public global::System.Collections.Specialized.StringCollection StockMaps {
             get {
                 return ((global::System.Collections.Specialized.StringCollection)(this["StockMaps"]));

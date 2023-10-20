@@ -19,6 +19,8 @@ internal static class Const
 80
 #endif
         ;
+
+    internal const char Separator = '/';
     #endregion
 
     #region SteamCMD
