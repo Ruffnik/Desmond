@@ -33,7 +33,7 @@ public static class Utilities
         return (T)new DataContractSerializer(typeof(T)).ReadObject(Reader)!;
     }
 
-    public static StringCollection EncodeSettings(IEnumerable<ulong> _) => EncodeSettings(_.Select(_ => _.ToString()));
+    public static StringCollection EncodeSettings(IEnumerable<ulong> _) => EncodeSettings(_.Select(_ => $"{_}"));
 
     public static StringCollection EncodeSettings(IEnumerable<string> _)
     {
@@ -60,19 +60,18 @@ public static class Utilities
 
 public static class ExtensionMethods
 {
-    public static string Decode<T>(this T Enum) where T : Enum
-    {
-        var D1 = typeof(T).GetMember(Enum!.ToString()!);
-        var D2 = D1.Single();
-        var D3 = D2.GetCustomAttributes(false);
-        var D4 = D3.OfType<EnumMemberAttribute>()!;
-        var D5 = D4.SingleOrDefault();
-        return D5?.Value ?? $"{Enum}";
-    }
+    public static string Decode<T>(this T Enum) where T : Enum => typeof(T).GetMember(Enum!.ToString()!).Single().GetCustomAttributes(false).OfType<EnumMemberAttribute>()!.SingleOrDefault()?.Value ?? $"{Enum}";
 
     public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> Collection) => Collection.OrderBy(_ => PRNG.Next());
 
     public static T Random<T>(this IEnumerable<T> Collection) => Collection.ElementAt(PRNG.Next(0, Collection.Count()));
+
+    public static byte[] ReadAll(this Stream Stream)
+    {
+        var Buffer = new byte[10240];//https://gist.github.com/NikolayIT/91dee5fea4386199ea6171de80eb2be4
+        var Count = Stream.Read(Buffer, 0, Buffer.Length);
+        return Buffer[0..Count];
+    }
 
     static readonly Random PRNG = new();
 }

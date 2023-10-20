@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using Desmond;
 
-AppDomain.CurrentDomain.UnhandledException += (object _, UnhandledExceptionEventArgs e) => Console.WriteLine($"{e}");
+AppDomain.CurrentDomain.UnhandledException += (object _, UnhandledExceptionEventArgs e) => Console.Error.Write($"{e}");
 Settings.Default.PropertyChanged += (object? sender, PropertyChangedEventArgs e) => Settings.Default.Save();
 
 Console.Title = Utilities.Name;
@@ -23,17 +23,17 @@ else
     });
 }
 
-Frontend.Start(Farm);
 KF2Server.KillAll();
+Frontend.Start(Farm);
 
 while (true)
 {
     KF2Server.Clean();
     KF2Server.TryUpdate();
-    var Status = KF2Server.GetStatus();
-    Frontend.Update(Farm, Status.Address);
+    var State = KF2Server.GetStaticState();
+    Frontend.Update(Farm, State.Address);
 
-    var MissingStockMaps = Status.Maps.Where(_ => !Settings.Default.StockMaps.Contains(_));
+    var MissingStockMaps = State.Maps.Where(_ => !Settings.Default.StockMaps.Contains(_));
     if (MissingStockMaps.Any())
     {
         Settings.Default.StockMaps = Utilities.EncodeSettings(Utilities.DecodeStrings(Settings.Default.StockMaps).Concat(MissingStockMaps.Shuffle()));
@@ -42,7 +42,7 @@ while (true)
 
     Farm.AsParallel().ForAll(_ =>
     {
-        if (_.Weekly is not null && _.Weekly != Status.Weekly)
+        if (_.Weekly is not null && _.Weekly != State.Weekly)
             _.Kill();
         _.Run(Utilities.DecodeStrings(Settings.Default.StockMaps));
     });

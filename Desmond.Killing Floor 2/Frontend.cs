@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Runtime.Serialization;
 using System.Text;
+using HttpServerLite;
 
 namespace Desmond;
 
@@ -9,66 +10,78 @@ internal static class Frontend
     #region Business logic
     internal static void Start(IEnumerable<KF2Server> Farm)
     {
-        //Update(Farm);
-        //HttpListener Listener = new() { IgnoreWriteExceptions = true };
-        //Listener.Prefixes.Add("http://*:8080/");
-        //Listener.Start();
-        //Listener.BeginGetContext(new(Callback), Listener);
+        Update(Farm);
+        Webserver Server = new("+", Const.Port, Route);
+        Server.Settings.Headers.Connection = "keep-alive";
+        Server.Start();
     }
 
     internal static void Update(IEnumerable<KF2Server> Farm, IPAddress? Address = null)
     {
-        //var Title = $"<title>{string.Join(" | ", Farm.Select(_ => _.ServerName!).Distinct())}</title>";
-
-        //var Links = $"<link rel=\"icon\" type=\"{Types.ICO.Decode()}\" href=\"favicon.ico\"><link rel=\"stylesheet\" type=\"{Types.CSS.Decode()}\" href=\"kf2.css\"><link rel=\"stylesheet\" type=\"{Types.CSS.Decode()}\" href=\"kf2modern.css\">";
-
-        //var Script = $"<script type=\"text/javascript\">function WebAdmin(Port){{window.location.replace(window.location.protocol +\"//\"+window.location.hostname+\":\"+Port)}}</script>";
-
-        //var Table = "<table><tr>" +
-        //    string.Join("</tr><tr>", Farm.Select(Server =>
-        //    {
-        //        var Opener = null == Address ? string.Empty : $"<a href=\"steam://rungameid/232090//-SteamConnectIP={Address}:{Server.Port}\">";
-        //        var Closer = null == Address ? string.Empty : "</a>";
-
-        //        return $"<td>{Opener}{Server.ConfigSubDir}{Closer}</td>" +
-        //       //$"<td><a href=\"steam://connect/{Address}:{Server.Port}\">&#x267F;</a></td>" +//TODO: connect in-game somehow
-        //       $"{"<td>"}{(Server.AdminPort is not null ?
-        //           $"<a href=# onclick=\"WebAdmin(" + Server.AdminPort + ")\">&#x1F9D9</a>" :
-        //           "&#x274C")}" +
-        //           "</td>";
-        //    }
-        //)) + "</tr></table>";
-
-        //var Footer = "<footer>" + DateTime.Now.ToString("o") + "</footer>";
-
-        //Homepage = $"<!doctype html><head>{Title}{Links}{Script}</head><body>{Table}{Footer}</body></html>";
+        _Farm = Farm;
+        _Address = Address;
     }
 
-    static void Callback(IAsyncResult _)
+    static async Task Route(HttpContext Context)
     {
-        var Listener = (HttpListener)_.AsyncState!;
-        Listener.BeginGetContext(new AsyncCallback(Callback), Listener);
-        var Context = Listener.EndGetContext(_);
-
-        var Payload = Serve(Context.Request.RawUrl?.TrimStart('/'));
-        var Response = Context.Response;
-        Response.StatusCode = (int)Payload.Status;
-        using var Stream = Response.OutputStream;
-        if (HttpStatusCode.OK == Payload.Status)
+        var Response = ServePath(Context.Request.Url.WithoutQuery.TrimStart(Const.Separator));
+        Context.Response.StatusCode = (int)Response.Status;
+        if (HttpStatusCode.OK == Response.Status)
         {
-            Response.ContentLength64 = Payload.Content!.LongLength;
-            Response.ContentType = Payload.Type!.Value.Decode();
-            Stream.Write(Payload.Content, 0, Payload.Content.Length);
+            Context.Response.ContentLength = Response.Content!.LongLength;
+            Context.Response.ContentType = Response.Type!.Value.Decode();
+            await Context.Response.SendAsync(Response.Content);
         }
+        else
+            await Context.Response.SendAsync(string.Empty);
+    }
+
+    static string ServeHomepage()
+    {
+        var Title = _Farm is not null ? $"<title>{string.Join(" | ", _Farm.Select(_ => _.ServerName!).Distinct())}</title>" : Utilities.Name;
+
+        var Links = $"<link rel='icon' type='{Types.ICO.Decode()}' href='favicon.ico'><link rel='stylesheet' type='{Types.CSS.Decode()}' href='kf2.css'><link rel='stylesheet' type='{Types.CSS.Decode()}' href='kf2modern.css'>";
+
+        var Script = $"<script type='{Types.JS.Decode()}'>function WebAdmin(Port){{window.open(window.location.protocol +'//'+window.location.hostname+':'+Port)}}</script>";
+
+        var Body = _Farm is not null ?
+            "<table><tr>" +
+            string.Join("</tr><tr>", _Farm.Select(Server =>
+            {
+                var Connect = _Address is null ? string.Empty : $"<a href='steam://rungameid/232090//-SteamConnectIP={_Address}:{Server.Port}'>";
+                var Closer = _Address is null ? string.Empty : "</a>";
+                var Administrate = _Address is null ? string.Empty : $"<a href='javascript:WebAdmin({Server.AdminPort})'>";
+
+                var Cell =
+                $"{"<td>"}{(Server.AdminPort is not null ?
+                $"{Administrate}&#x1F9D9{Closer}" :
+                "&#x274C")}</td>" +
+                $"<td>{Connect}{Server.ConfigSubDir}{Closer}</td>";//TODO: connect in-game somehow
+
+                var State = Server.DynamicState;
+                if (State is not null)
+                    Cell +=
+                    $"<td>{State!.Map}</td>" +
+                    $"<td>{State!.Players}</td>" +
+                    $"<td>{State!.Connections}</td>";
+
+                return Cell;
+            }
+        )) + "</tr></table>"
+        : string.Empty;
+
+        var Footer = "<footer><a href='https://github.com/Ruffnik/Desmond'>GitHub.com/Ruffnik/Desmond</a></footer>";
+
+        return $"<!doctype html><head>{Title}{Links}{Script}</head><body>{Body}{Footer}</body></html>";
     }
     #endregion
 
     #region HTTP
-    static Response Serve(string? Path) =>
+    static Response ServePath(string? Path) =>
         Path is null ?
         new(HttpStatusCode.BadRequest) :
         string.Empty == Path ?
-        new(Homepage!) :
+        new(ServeHomepage()) :
         ServeResource(Path);
 
     static Response ServeResource(string Name)
@@ -106,8 +119,8 @@ internal static class Frontend
 
     #region Plumbing
     static readonly Dictionary<string, byte[]> Resources = new();
-
-    static string? Homepage;
+    static IEnumerable<KF2Server>? _Farm;
+    static IPAddress? _Address;
     #endregion
 
     #region Types
@@ -144,7 +157,9 @@ internal static class Frontend
         [EnumMember(Value = "image/x-icon")]
         ICO,
         [EnumMember(Value = "image/png")]
-        PNG
+        PNG,
+        [EnumMember(Value = "text/javascript")]
+        JS
     };
     #endregion
 }
