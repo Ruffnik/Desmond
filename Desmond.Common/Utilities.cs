@@ -66,12 +66,5 @@ public static class ExtensionMethods
 
     public static T Random<T>(this IEnumerable<T> Collection) => Collection.ElementAt(PRNG.Next(0, Collection.Count()));
 
-    public static byte[] ReadAll(this Stream Stream)
-    {
-        var Buffer = new byte[10240];//https://gist.github.com/NikolayIT/91dee5fea4386199ea6171de80eb2be4
-        var Count = Stream.Read(Buffer, 0, Buffer.Length);
-        return Buffer[0..Count];
-    }
-
     static readonly Random PRNG = new();
 }
